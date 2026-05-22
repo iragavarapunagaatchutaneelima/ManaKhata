@@ -4,7 +4,7 @@ ManaKhata is a household finance management platform for families and shared hom
 
 ## Live Demo
 
-Live demo: _Deployment link will be added after the Vercel deployment is completed._
+Live demo: [https://frontend-phi-lemon-1hkzt9uj98.vercel.app](https://frontend-phi-lemon-1hkzt9uj98.vercel.app)
 
 ## Highlights
 
