@@ -1,0 +1,60 @@
+spring:
+  application:
+    name: ManaKhata
+
+  # H2 In-Memory Database (Development)
+  datasource:
+    url: jdbc:h2:mem:manaKhatadb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;NON_KEYWORDS=MONTH,YEAR,VALUE,KEY,DAY,MINUTE,SECOND,HOUR
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ""
+
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+        format_sql: true
+
+  # For production MySQL, use:
+  # datasource:
+  #   url: jdbc:mysql://localhost:3306/manaKhatadb?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC
+  #   username: ${DB_USERNAME:root}
+  #   password: ${DB_PASSWORD:}
+  #   driver-class-name: com.mysql.cj.jdbc.Driver
+  # jpa:
+  #   properties:
+  #     hibernate:
+  #       dialect: org.hibernate.dialect.MySQL8Dialect
+
+server:
+  port: 8080
+  error:
+    include-message: always
+    include-binding-errors: always
+
+manaKhata:
+  jwt:
+    secret: ${JWT_SECRET:manaKhata-super-secret-jwt-key-2024-enterprise-grade-minimum-256-bits}
+    expiration: 86400000       # 24 hours in ms
+    refresh-expiration: 604800000  # 7 days in ms
+
+  ai-service:
+    url: ${AI_SERVICE_URL:http://localhost:8000}
+
+  cors:
+    allowed-origins:
+      - http://localhost:3000
+      - http://localhost:3001
+
+logging:
+  level:
+    com.manaKhata: DEBUG
+    org.springframework.security: WARN
