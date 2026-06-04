@@ -14,6 +14,7 @@ import java.time.LocalDate;
     @Index(name = "idx_vexp_user", columnList = "contributor_id")
 })
 @Getter @Setter @Builder @NoArgsConstructor @AllArgsConstructor
+@com.fasterxml.jackson.annotation.JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class VehicleExpense extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
