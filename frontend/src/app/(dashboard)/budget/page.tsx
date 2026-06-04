@@ -5,7 +5,7 @@ import { motion } from 'framer-motion'
 import { Plus, Trash2 } from 'lucide-react'
 import api from '@/lib/api'
 import { useAuthStore } from '@/store/authStore'
-import { formatCurrency, getMonthName, useCategoryIcon } from '@/hooks/useUtils'
+import { formatCurrency, getMonthName, getCategoryIcon } from '@/hooks/useUtils'
 import type { Budget, ExpenseCategory } from '@/types'
 import toast from 'react-hot-toast'
 
@@ -62,7 +62,7 @@ export default function BudgetPage() {
       <div className="glass-card p-5">
         <div className="flex items-start justify-between mb-3">
           <div className="flex items-center gap-2">
-            <span className="text-2xl">{useCategoryIcon(budget.category)}</span>
+            <span className="text-2xl">{getCategoryIcon(budget.category)}</span>
             <div>
               <div className="font-semibold text-sm capitalize" style={{ color: 'var(--text-primary)' }}>
                 {budget.category.replace('_', ' ').toLowerCase()}

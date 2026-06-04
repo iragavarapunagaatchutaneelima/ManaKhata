@@ -9,9 +9,14 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
+import org.springframework.data.jpa.repository.EntityGraph;
+
 @Repository
 public interface ReimbursementRepository extends JpaRepository<Reimbursement, Long> {
+    @EntityGraph(attributePaths = {"payer", "reimbursee", "household", "approvedBy"})
     Page<Reimbursement> findByHouseholdId(Long householdId, Pageable pageable);
+
+    @EntityGraph(attributePaths = {"payer", "reimbursee", "household", "approvedBy"})
     Page<Reimbursement> findByPayerId(Long payerId, Pageable pageable);
     List<Reimbursement> findByHouseholdIdAndStatus(Long householdId, ReimbursementStatus status);
     List<Reimbursement> findByPayerIdAndStatus(Long payerId, ReimbursementStatus status);

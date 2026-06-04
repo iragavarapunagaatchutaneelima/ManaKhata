@@ -52,11 +52,11 @@ export default function ExpensesPage() {
           <div className="glass-card p-5">
             <div className="w-10 h-10 gradient-rose rounded-xl flex items-center justify-center text-xl mb-3">📤</div>
             <div className="font-display font-bold text-xl" style={{ color: 'var(--text-primary)' }}>
-              {formatCurrency(summary.personalTotal)}
+              {formatCurrency(summary.personalTotal ?? summary.total ?? 0)}
             </div>
             <div className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>My Spending This Month</div>
           </div>
-          {summary.householdTotal > 0 && (
+          {(summary.householdTotal ?? 0) > 0 && (
             <div className="glass-card p-5">
               <div className="w-10 h-10 gradient-brand rounded-xl flex items-center justify-center text-xl mb-3">🏠</div>
               <div className="font-display font-bold text-xl" style={{ color: 'var(--text-primary)' }}>
@@ -82,10 +82,13 @@ export default function ExpensesPage() {
             Category Breakdown
           </h3>
           <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={summary.categoryBreakdown.map((r: any[]) => ({ category: r[0], amount: r[1] }))}>
+            <BarChart data={summary.categoryBreakdown.map((r: any) => ({
+              category: typeof r === 'object' && !Array.isArray(r) ? r.category : r[0],
+              amount:   typeof r === 'object' && !Array.isArray(r) ? r.amount   : r[1],
+            }))}>
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.10)" />
               <XAxis dataKey="category" tick={{ fontSize: 10, fill: 'var(--text-muted)' }} axisLine={false} tickLine={false}
-                tickFormatter={(v: string) => v.slice(0,5)} />
+                tickFormatter={(v: string) => v.slice(0,6)} />
               <YAxis hide />
               <Tooltip formatter={(v: any) => formatCurrency(Number(v))}
                 contentStyle={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '12px', color: 'var(--text-primary)' }} />

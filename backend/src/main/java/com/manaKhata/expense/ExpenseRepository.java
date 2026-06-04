@@ -10,11 +10,15 @@ import org.springframework.stereotype.Repository;
 import java.time.LocalDate;
 import java.util.List;
 
+import org.springframework.data.jpa.repository.EntityGraph;
+
 @Repository
 public interface ExpenseRepository extends JpaRepository<Expense, Long> {
 
+    @EntityGraph(attributePaths = {"user", "household"})
     Page<Expense> findByUserId(Long userId, Pageable pageable);
 
+    @EntityGraph(attributePaths = {"user", "household"})
     Page<Expense> findByHouseholdId(Long householdId, Pageable pageable);
 
     @Query("SELECT e FROM Expense e WHERE e.household.id = :householdId AND e.expenseDate BETWEEN :start AND :end ORDER BY e.expenseDate DESC")

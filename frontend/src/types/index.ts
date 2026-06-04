@@ -60,6 +60,9 @@ export interface Expense {
   isShared: boolean
   isReimbursable: boolean
   paidForHousehold: boolean
+  vehicleId?: number
+  tripId?: number
+  tags?: string
   createdAt: string
   user?: { id: number; fullName: string; avatarUrl?: string }
 }

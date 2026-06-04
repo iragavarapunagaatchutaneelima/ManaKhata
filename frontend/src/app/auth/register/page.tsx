@@ -63,11 +63,13 @@ export default function RegisterPage() {
   const inputClass = "input-field" + " [&]:bg-white/6 [&]:border-white/10 [&]:text-white [&::placeholder]:text-white/30"
 
   return (
-    <div className="min-h-screen bg-[#0a0f1e] flex items-center justify-center p-6">
+    <div className="premium-app-shell min-h-screen flex items-center justify-center p-6">
       {/* Background glows */}
       <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute top-0 right-1/4 w-80 h-80 bg-indigo-600/15 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 left-1/4 w-64 h-64 bg-purple-600/10 rounded-full blur-3xl" />
+        <div className="liquid-blob left-[-8rem] top-[8rem] bg-sky-400/32" />
+        <div className="liquid-blob right-[-9rem] bottom-[-8rem] bg-blue-700/28" />
+        <div className="absolute top-0 right-1/4 w-80 h-80 bg-blue-600/14 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 left-1/4 w-64 h-64 bg-cyan-700/10 rounded-full blur-3xl" />
       </div>
 
       <motion.div
@@ -77,7 +79,7 @@ export default function RegisterPage() {
       >
         {/* Logo */}
         <div className="flex items-center gap-2 mb-8 justify-center">
-          <div className="w-9 h-9 rounded-xl gradient-brand flex items-center justify-center font-bold text-lg shadow-glow-brand">M</div>
+          <div className="premium-logo w-9 h-9 rounded-xl flex items-center justify-center font-bold text-lg text-white">M</div>
           <span className="font-display font-bold text-xl text-white">ManaKhata</span>
         </div>
 
@@ -102,7 +104,7 @@ export default function RegisterPage() {
                     <User size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/30" />
                     <input id="reg-name" type="text" value={form.fullName} onChange={e => update('fullName', e.target.value)}
                       className="input-field pl-10" style={{ background: 'rgba(255,255,255,0.06)', borderColor: 'rgba(255,255,255,0.10)', color: 'white' }}
-                      placeholder="Rajesh Sharma" />
+                      placeholder="Mario" />
                   </div>
                 </div>
                 <div>
@@ -214,7 +216,7 @@ export default function RegisterPage() {
                     <Home size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/30" />
                     <input id="reg-household-name" type="text" value={form.householdName} onChange={e => update('householdName', e.target.value)}
                       className="input-field pl-10" style={{ background: 'rgba(255,255,255,0.06)', borderColor: 'rgba(255,255,255,0.10)', color: 'white' }}
-                      placeholder="Sharma Family" />
+                      placeholder="Mario Family" />
                   </div>
                   <p className="text-white/30 text-xs mt-2">You'll be the Househead with full admin access.</p>
                 </div>
@@ -225,7 +227,7 @@ export default function RegisterPage() {
                     <Hash size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/30" />
                     <input id="reg-invite-code" type="text" value={form.inviteCode} onChange={e => update('inviteCode', e.target.value.toUpperCase())}
                       className="input-field pl-10 uppercase tracking-widest" style={{ background: 'rgba(255,255,255,0.06)', borderColor: 'rgba(255,255,255,0.10)', color: 'white' }}
-                      placeholder="SHARMA01" maxLength={8} />
+                      placeholder="MARIO01" maxLength={8} />
                   </div>
                   <p className="text-white/30 text-xs mt-2">Get the invite code from your household head.</p>
                 </div>

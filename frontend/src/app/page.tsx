@@ -28,35 +28,42 @@ export default function LandingPage() {
   const { isAuthenticated } = useAuthStore()
   const router = useRouter()
 
-  useEffect(() => {
-    if (isAuthenticated) router.replace('/dashboard')
-  }, [isAuthenticated, router])
-
   return (
-    <div className="min-h-screen bg-[#0a0f1e] text-white overflow-x-hidden">
+    <div className="premium-app-shell min-h-screen text-white overflow-x-hidden">
       {/* Mesh background */}
       <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-purple-600/20 rounded-full blur-3xl" />
-        <div className="absolute top-1/3 right-1/4 w-80 h-80 bg-indigo-600/15 rounded-full blur-3xl" />
-        <div className="absolute bottom-1/4 left-1/3 w-72 h-72 bg-brand-600/10 rounded-full blur-3xl" />
+        <div className="liquid-blob left-[-8rem] top-[9rem] bg-sky-400/35" />
+        <div className="liquid-blob right-[-8rem] top-[-6rem] bg-blue-600/30" />
+        <div className="liquid-blob bottom-[-10rem] left-[40%] bg-cyan-900/35" />
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-600/14 rounded-full blur-3xl" />
+        <div className="absolute top-1/3 right-1/4 w-80 h-80 bg-sky-500/12 rounded-full blur-3xl" />
+        <div className="absolute bottom-1/4 left-1/3 w-72 h-72 bg-cyan-700/10 rounded-full blur-3xl" />
       </div>
 
       {/* Navbar */}
       <nav className="relative z-10 flex items-center justify-between px-6 md:px-12 py-5 border-b border-white/5">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl gradient-brand flex items-center justify-center text-white font-bold text-lg shadow-glow-brand">
+          <div className="premium-logo w-9 h-9 rounded-xl flex items-center justify-center text-white font-bold text-lg">
             M
           </div>
           <span className="font-display font-bold text-xl">ManaKhata</span>
           <span className="hidden sm:block text-xs text-white/40 font-medium">Our Household Account</span>
         </div>
         <div className="flex items-center gap-3">
-          <Link href="/auth/login" className="btn-ghost text-white/70 border-white/10 hover:border-white/20">
-            Sign In
-          </Link>
-          <Link href="/auth/register" className="btn-primary">
-            Get Started
-          </Link>
+          {isAuthenticated ? (
+            <Link href="/dashboard" className="btn-primary">
+              Go to Dashboard →
+            </Link>
+          ) : (
+            <>
+              <Link href="/auth/login" className="btn-ghost text-white/70 border-white/10 hover:border-white/20">
+                Sign In
+              </Link>
+              <Link href="/auth/register" className="btn-primary">
+                Get Started
+              </Link>
+            </>
+          )}
         </div>
       </nav>
 
@@ -67,12 +74,12 @@ export default function LandingPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, ease: 'easeOut' }}
         >
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-brand-500/30 bg-brand-500/10 text-brand-300 text-sm font-medium mb-6">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-cyan-300/25 bg-cyan-300/10 text-cyan-100 text-sm font-medium mb-6 shadow-glow-brand">
             <span className="w-2 h-2 rounded-full bg-brand-400 animate-pulse" />
             AI-Powered Household Financial OS
           </div>
 
-          <h1 className="font-display font-bold text-5xl md:text-7xl leading-tight mb-6">
+          <h1 className="font-display font-bold text-5xl md:text-7xl leading-tight mb-6 drop-shadow-[0_18px_54px_rgba(37,99,235,0.28)]">
             The Financial Brain
             <br />
             <span className="text-gradient-brand">of Your Family</span>
@@ -148,7 +155,7 @@ export default function LandingPage() {
       <section className="relative z-10 px-6 pb-20">
         <motion.div
           className="max-w-2xl mx-auto glass-card p-8 text-center"
-          style={{ background: 'rgba(99,102,241,0.08)', borderColor: 'rgba(99,102,241,0.20)' }}
+          style={{ background: 'rgba(14,165,233,0.075)', borderColor: 'rgba(125,211,252,0.18)' }}
           initial={{ opacity: 0, scale: 0.95 }}
           whileInView={{ opacity: 1, scale: 1 }}
           viewport={{ once: true }}

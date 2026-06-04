@@ -11,13 +11,21 @@ import AiInsightsPanel from '@/components/ui/AiInsightsPanel'
 const riskColors: Record<string, string> = {
   'Conservative':    'gradient-emerald',
   'Moderate':        'gradient-brand',
+  'Balanced':        'gradient-brand',
   'Moderate-High':   'gradient-gold',
+  'Aggressive':      'gradient-rose',
 }
 const riskLevelColor: Record<string, string> = {
   'VERY_LOW': 'badge-emerald',
   'LOW':      'badge-emerald',
   'MEDIUM':   'badge-gold',
   'HIGH':     'badge-rose',
+  'VERY_HIGH':'badge-rose',
+}
+
+/** Normalize risk level string to badge class — handles 'Low', 'LOW', 'low' etc. */
+function getRiskBadge(riskLevel: string): string {
+  return riskLevelColor[riskLevel?.toUpperCase?.() ?? ''] || 'badge-muted'
 }
 
 export default function AiAdvisorPage() {
@@ -148,7 +156,7 @@ export default function AiAdvisorPage() {
               transition={{ delay: i * 0.07 }}>
               <div className="flex items-start justify-between mb-3">
                 <div className="text-3xl">{opt.icon}</div>
-                <span className={`badge ${riskLevelColor[opt.riskLevel] || 'badge-muted'}`}>
+              <span className={`badge ${getRiskBadge(opt.riskLevel)}`}>
                   {opt.riskLevel.replace('_', ' ')}
                 </span>
               </div>

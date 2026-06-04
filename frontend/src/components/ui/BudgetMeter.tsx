@@ -2,7 +2,7 @@
 
 import { motion } from 'framer-motion'
 import type { Budget } from '@/types'
-import { useCategoryIcon } from '@/hooks/useUtils'
+import { getCategoryIcon } from '@/hooks/useUtils'
 
 interface BudgetMeterProps {
   budgets: Budget[]
@@ -47,7 +47,7 @@ export default function BudgetMeter({ budgets, loading }: BudgetMeterProps) {
             >
               <div className="flex items-center justify-between mb-1.5">
                 <div className="flex items-center gap-2">
-                  <span>{useCategoryIcon(budget.category)}</span>
+                  <span>{getCategoryIcon(budget.category)}</span>
                   <span className="text-sm font-medium capitalize" style={{ color: 'var(--text-primary)' }}>
                     {budget.category.replace('_', ' ').toLowerCase()}
                   </span>

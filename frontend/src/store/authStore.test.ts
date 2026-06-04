@@ -3,13 +3,13 @@ import { useAuthStore } from '@/store/authStore'
 
 describe('Auth Store', () => {
   beforeEach(() => {
-    useAuthStore.setState({ user: null, token: null, isLoading: false })
+    useAuthStore.setState({ user: null, isAuthenticated: false, isLoading: false, hasHydrated: true })
   })
 
-  it('should start with null user and token', () => {
+  it('should start with null user and logged-out state', () => {
     const state = useAuthStore.getState()
     expect(state.user).toBeNull()
-    expect(state.token).toBeNull()
+    expect(state.isAuthenticated).toBe(false)
   })
 
   it('should set credentials correctly', () => {

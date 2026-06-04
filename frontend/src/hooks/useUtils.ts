@@ -5,14 +5,14 @@ import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/store/authStore'
 
 export function useRequireAuth() {
-  const { isAuthenticated, user } = useAuthStore()
+  const { isAuthenticated, hasHydrated, user } = useAuthStore()
   const router = useRouter()
 
   useEffect(() => {
-    if (!isAuthenticated || !user) {
+    if (hasHydrated && (!isAuthenticated || !user)) {
       router.replace('/auth/login')
     }
-  }, [isAuthenticated, user, router])
+  }, [hasHydrated, isAuthenticated, user, router])
 
   return { user, isAuthenticated }
 }
@@ -26,7 +26,7 @@ export function useFormatCurrency(amount: number): string {
   }).format(amount)
 }
 
-export function useCategoryIcon(category: string): string {
+export function getCategoryIcon(category: string): string {
   const icons: Record<string, string> = {
     FOOD: '🍽️',
     GROCERIES: '🛒',
@@ -81,10 +81,10 @@ export function formatDate(dateStr: string): string {
   return new Intl.DateTimeFormat('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date(dateStr))
 }
 
-export function formatCurrency(amount: number): string {
+export function formatCurrency(amount: number, currencyCode: string = 'INR'): string {
   return new Intl.NumberFormat('en-IN', {
     style: 'currency',
-    currency: 'INR',
+    currency: currencyCode,
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(amount)

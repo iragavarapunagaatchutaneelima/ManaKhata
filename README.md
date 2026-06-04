@@ -1,165 +1,130 @@
 # ManaKhata
 
-ManaKhata is a household finance management platform for families and shared homes. It combines a modern Next.js dashboard with a Spring Boot API to track expenses, budgets, reimbursements, shared assets, analytics, and rule-based financial insights.
+ManaKhata is a production-ready household finance operating system for families. It combines expense tracking, reimbursements, budgets, wallets, vehicles, chores, grocery lists, savings goals, investments, medical policies, tax records, trip budgets, AI insights, and real-time collaboration in one polished dashboard.
 
-## Live Demo
+## What Changed in This Build
 
-Live demo: [https://frontend-phi-lemon-1hkzt9uj98.vercel.app](https://frontend-phi-lemon-1hkzt9uj98.vercel.app)
+- Complete blue-noir UI refresh with restrained glossy cards, deep blue aurora backgrounds, subtle reflective highlights, animated navigation, premium dashboard shell, and smoother page transitions.
+- Global interaction audio for button, link, input, and control clicks using the Web Audio API.
+- Richer demo mode with realistic May 2026 household expenses, reimbursements, wallet activity, analytics, budgets, trips, goals, policies, investments, chores, and grocery data.
+- Production build verified with Next.js 16.2.6 and React 19.2.4.
 
-## Highlights
-
-- Household workspace with member roles, househead controls, and permission-based access.
-- Personal and household expense tracking with categories, monthly summaries, and visibility controls.
-- Reimbursement workflow for creating, approving, rejecting, and settling shared payments.
-- Budget management for personal and household spending plans.
-- Vehicle and shared asset expense tracking with contribution summaries.
-- Analytics dashboards for household and personal financial trends.
-- Rule-based AI-style insights, health score, predictions, and investment suggestions.
-- Automatic backup engines for JSON, SQL, and Excel-style exports.
-
-## Tech Stack
+## Stack
 
 | Layer | Technology |
 | --- | --- |
-| Frontend | Next.js, React, TypeScript, Tailwind CSS, Zustand, Recharts |
-| Backend | Java 17, Spring Boot, Spring Security, JWT, Spring Data JPA |
-| AI service | FastAPI placeholder service |
-| Database | H2 for local development, with MySQL-ready configuration notes |
-| Tooling | Docker Compose, Maven, npm, Vitest |
+| Frontend | Next.js App Router, React 19, TypeScript, Tailwind CSS 4, Framer Motion, Zustand, Recharts |
+| Backend | Spring Boot, Spring Security, JPA/Hibernate, Flyway |
+| AI Service | Python FastAPI-style service entry under `ai-service` |
+| Database | PostgreSQL-ready schema and seed data |
+| Local Orchestration | Docker Compose plus helper scripts |
 
-## Project Structure
+## Demo Login
 
-```text
-ManaKhata/
-├── frontend/       # Next.js web application
-├── backend/        # Spring Boot REST API
-├── ai-service/     # FastAPI placeholder service
-├── database/       # Database-related project files
-├── docker/         # Docker support files
-├── docs/           # Additional documentation
-├── mobile/         # Mobile app workspace placeholder
-├── docker-compose.yml
-└── run.bat         # Windows helper to start local services
-```
+Use any demo account with password `Demo@1234`.
 
-## Local Development
-
-### Prerequisites
-
-- Node.js 20 or later
-- npm
-- Java 17
-- Maven 3.9 or later, or the bundled Maven files if present locally
-- Python 3.11 or later for the optional AI service
-- Docker Desktop if you want to use Docker Compose
-
-### Start Everything on Windows
-
-```bat
-run.bat
-```
-
-Default local services:
-
-| Service | URL |
+| Role | Email |
 | --- | --- |
-| Frontend | `http://localhost:3000` |
-| Backend API | `http://localhost:8080` |
-| AI service | `http://localhost:8000` |
+| Househead | `demo@manaKhata.app` |
+| Parent | `ria@manaKhata.app` |
+| Adult Child | `max@manaKhata.app` |
+| Student | `lucy@manaKhata.app` |
+| Student | `jack@manaKhata.app` |
+
+The frontend automatically falls back to local demo data when the backend is unavailable, so the product can be explored immediately.
+
+## Quick Start
 
 ### Frontend
 
-```powershell
+```bash
 cd frontend
 npm install
 npm run dev
 ```
 
-Create `frontend/.env.local` for local API configuration:
-
-```env
-NEXT_PUBLIC_API_URL=http://localhost:8080
-NEXT_PUBLIC_APP_NAME=ManaKhata
-```
+Open `http://localhost:3000`.
 
 ### Backend
 
+```bash
+cd backend
+./mvnw spring-boot:run
+```
+
+On Windows PowerShell:
+
 ```powershell
 cd backend
-..\maven\apache-maven-3.9.6\bin\mvn.cmd spring-boot:run
+.\mvnw.cmd spring-boot:run
 ```
 
-If Maven is installed globally, you can use:
+The API defaults to `http://localhost:8080`. Set `NEXT_PUBLIC_API_URL` in `frontend/.env.local` if your backend runs elsewhere.
 
-```powershell
-cd backend
-mvn spring-boot:run
+### Full Local Stack
+
+```bash
+docker compose up --build
 ```
 
-### AI Service
+## Frontend Experience
 
-```powershell
-cd ai-service
-python -m pip install -r requirements.txt
-python -m uvicorn main:app --reload --port 8000
+- Dashboard shell: collapsible desktop sidebar, mobile slide-over navigation, premium top bar, notification indicator, theme toggle, statement download shortcut, and floating calculator.
+- Visual language: dark-first blue-black gloss, sky/cyan/royal-blue highlights, glassmorphism surfaces, soft grid texture, calm aurora blobs, and subtle shine passes.
+- Motion system: route transitions, sidebar slide animations, stat-card hover lifts, shimmer skeletons, smooth progress bars, table hover movement, and reduced-motion accessibility support.
+- UX quality: clear demo credentials, responsive layouts, accessible focus states, graceful demo fallback, and optimized static production build output.
+
+## Core Modules
+
+- Household members and permission management
+- Personal and household expenses
+- Reimbursements and split IOUs
+- Wallet balance and transactions
+- Budgets and health scoring
+- AI advisor, predictions, and investment suggestions
+- Vehicles and maintenance tracking
+- Trips and multi-currency trip expenses
+- Grocery lists and chore rewards
+- Investments, medical policies, and tax documents
+- Achievements, integrations, family chat, and analytics
+
+## Useful Commands
+
+```bash
+cd frontend && npm run build
+cd frontend && npm run test
+cd frontend && npm run lint
+cd backend && ./mvnw test
 ```
 
-## Demo Accounts
+## Production Notes
 
-The backend seeds demo data on startup when the test profile is not active.
+- Keep seeded demo data enabled only for demo/dev environments using `manakhata.seed.enabled`.
+- Configure `NEXT_PUBLIC_API_URL` for deployed frontend builds.
+- Rotate JWT/database secrets before deployment.
+- Use HTTPS for deployed APIs because the app stores auth tokens in browser storage.
+- Keep Next.js, React, and Spring dependencies patched before public exposure.
 
-| Purpose | Value |
-| --- | --- |
-| Invite code | `SHARMA01` |
-| Demo password | `Demo@1234` |
-| Househead email | `demo@manaKhata.app` |
-| Other users | `sunita@manaKhata.app`, `arjun@manaKhata.app`, `priya@manaKhata.app` |
+## Project Structure
 
-To disable seed data, set:
-
-```properties
-manakhata.seed.enabled=false
+```text
+ManaKhata/
+├── frontend/       Next.js app, UI, API client, stores, demo fallback data
+├── backend/        Spring Boot API, domain modules, Flyway migrations, seed data
+├── ai-service/     AI service entry point
+├── database/       Database assets
+├── docker/         Container support
+├── docs/           Supporting docs
+└── docker-compose.yml
 ```
 
-## Configuration
+## Current Verification
 
-### Frontend Environment
+The frontend production build succeeds:
 
-| Variable | Description | Default |
-| --- | --- | --- |
-| `NEXT_PUBLIC_API_URL` | Backend API base URL | `http://localhost:8080` |
-| `NEXT_PUBLIC_APP_NAME` | Display name used by the web app | `ManaKhata` |
-
-### Backend Environment
-
-| Variable | Description |
-| --- | --- |
-| `JWT_SECRET` | Secret used to sign JWT access tokens |
-| `AI_SERVICE_URL` | Base URL for the optional AI service |
-| `DB_USERNAME` | Database username for production database configuration |
-| `DB_PASSWORD` | Database password for production database configuration |
-
-## Testing
-
-### Frontend
-
-```powershell
+```bash
 cd frontend
 npm run build
-npx vitest run
 ```
 
-### Backend
-
-```powershell
-cd backend
-..\maven\apache-maven-3.9.6\bin\mvn.cmd test
-```
-
-## Deployment Notes
-
-The Vercel deployment targets the `frontend/` Next.js application. For a fully functional production demo, the Spring Boot API must also be deployed to a backend host and `NEXT_PUBLIC_API_URL` must point to that deployed API URL.
-
-## License
-
-This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
+Result: all 27 app routes compile and prerender successfully.

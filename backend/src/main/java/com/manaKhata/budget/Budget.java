@@ -4,6 +4,7 @@ import com.manaKhata.common.BaseEntity;
 import com.manaKhata.auth.User;
 import com.manaKhata.expense.ExpenseCategory;
 import com.manaKhata.household.Household;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -17,10 +18,12 @@ public class Budget extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
+    @JsonIgnoreProperties({"household", "passwordHash", "hibernateLazyInitializer", "handler"})
     private User user;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "household_id", nullable = false)
+    @JsonIgnoreProperties({"members", "hibernateLazyInitializer", "handler"})
     private Household household;
 
     @Enumerated(EnumType.STRING)

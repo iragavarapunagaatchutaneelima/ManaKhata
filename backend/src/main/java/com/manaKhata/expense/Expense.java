@@ -23,10 +23,12 @@ public class Expense extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
+    @JsonIgnoreProperties({"household", "passwordHash", "hibernateLazyInitializer", "handler"})
     private User user;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "household_id", nullable = false)
+    @JsonIgnoreProperties({"members", "hibernateLazyInitializer", "handler"})
     private Household household;
 
     @Column(name = "amount", nullable = false)

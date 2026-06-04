@@ -1,15 +1,19 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Client } from '@stomp/stompjs';
 import { useAuthStore } from '@/store/authStore';
 
 export function useWebSocket() {
-  const [stompClient, setStompClient] = useState<Client | null>(null);
+  const clientRef = useRef<Client | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const { user } = useAuthStore();
 
+  // Only reconnect when userId changes (not on every user object update)
+  const userId = user?.userId;
+  const householdId = user?.householdId;
+
   useEffect(() => {
     const token = typeof window !== 'undefined' ? localStorage.getItem('mk_token') : null;
-    if (!user || !token) return;
+    if (!userId || !token) return;
 
     const client = new Client({
       brokerURL: 'ws://localhost:8080/ws',
@@ -21,14 +25,15 @@ export function useWebSocket() {
       heartbeatOutgoing: 4000,
       onConnect: () => {
         setIsConnected(true);
-        // Subscribe to household specific topic
-        if (user.householdId) {
-          client.subscribe(`/topic/household/${user.householdId}`, (message) => {
+        if (householdId) {
+          client.subscribe(`/topic/household/${householdId}`, (message) => {
             if (message.body) {
-              const eventData = JSON.parse(message.body);
-              console.log('Received websocket event: ', eventData);
-              // We could dispatch a global event here or use a Zustand store to hold recent events
-              window.dispatchEvent(new CustomEvent('mk_ws_event', { detail: eventData }));
+              try {
+                const eventData = JSON.parse(message.body);
+                window.dispatchEvent(new CustomEvent('mk_ws_event', { detail: eventData }));
+              } catch {
+                // Ignore malformed messages
+              }
             }
           });
         }
@@ -36,15 +41,28 @@ export function useWebSocket() {
       onDisconnect: () => {
         setIsConnected(false);
       },
+      onStompError: (frame) => {
+        console.warn('[WS] STOMP error:', frame.headers?.message);
+        setIsConnected(false);
+      },
+      onWebSocketError: () => {
+        // Silently handle — reconnectDelay will retry
+        setIsConnected(false);
+      },
     });
 
+    clientRef.current = client;
     client.activate();
-    setStompClient(client);
 
     return () => {
-      client.deactivate();
+      setIsConnected(false);
+      client.deactivate().catch(() => {
+        // Ignore deactivation errors on cleanup
+      });
+      clientRef.current = null;
     };
-  }, [user]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId, householdId]);
 
-  return { stompClient, isConnected };
+  return { isConnected };
 }

@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { Plus, Trash2 } from 'lucide-react'
 import api from '@/lib/api'
-import { formatCurrency, formatDate, useCategoryIcon } from '@/hooks/useUtils'
+import { formatCurrency, formatDate, getCategoryIcon } from '@/hooks/useUtils'
 import type { Expense } from '@/types'
 import AddExpenseModal from './AddExpenseModal'
 import toast from 'react-hot-toast'
@@ -38,7 +38,8 @@ export default function RecentExpenses() {
 
   return (
     <div className="glass-card">
-      <div className="flex items-center justify-between p-5 border-b" style={{ borderColor: 'var(--border-color)' }}>
+      <div className="flex items-center justify-between p-5 border-b relative" style={{ borderColor: 'var(--border-color)' }}>
+        <div className="absolute inset-x-5 top-0 h-px bg-gradient-to-r from-transparent via-cyan-200/45 to-transparent" />
         <h3 className="font-display font-semibold text-base" style={{ color: 'var(--text-primary)' }}>
           Recent Expenses
         </h3>
@@ -77,14 +78,15 @@ export default function RecentExpenses() {
           {expenses.map((expense, i) => (
             <motion.div
               key={expense.id}
-              className="flex items-center gap-3 p-4 group hover:bg-brand-500/5 transition-colors"
+              className="flex items-center gap-3 p-4 group hover:bg-white/[0.055] transition-all duration-200"
               initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
+              whileHover={{ x: 5, scale: 1.006 }}
               transition={{ delay: i * 0.04 }}
             >
               <div className="w-10 h-10 rounded-xl flex items-center justify-center text-lg flex-shrink-0"
                 style={{ background: 'var(--bg-primary)' }}>
-                {useCategoryIcon(expense.category)}
+                {getCategoryIcon(expense.category)}
               </div>
 
               <div className="flex-1 min-w-0">

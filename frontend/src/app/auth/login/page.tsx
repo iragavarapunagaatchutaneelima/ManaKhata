@@ -27,22 +27,24 @@ export default function LoginPage() {
   }
 
   const demoLogins = [
-    { label: 'Househead', email: 'demo@manaKhata.app',   role: 'HOUSEHEAD' },
-    { label: 'Mother',    email: 'sunita@manaKhata.app', role: 'PARENT' },
-    { label: 'Son',       email: 'arjun@manaKhata.app',  role: 'ADULT_CHILD' },
-    { label: 'Daughter',  email: 'priya@manaKhata.app',  role: 'STUDENT' },
+    { label: 'Mario (Head)', email: 'demo@manaKhata.app',  role: 'HOUSEHEAD' },
+    { label: 'Ria',          email: 'ria@manaKhata.app',   role: 'PARENT' },
+    { label: 'Max',          email: 'max@manaKhata.app',   role: 'ADULT_CHILD' },
+    { label: 'Lucy',         email: 'lucy@manaKhata.app',  role: 'STUDENT' },
   ]
 
   return (
-    <div className="min-h-screen bg-[#0a0f1e] flex">
+    <div className="premium-app-shell min-h-screen flex">
+      <div className="liquid-blob left-[-8rem] top-[8rem] bg-sky-400/32" />
+      <div className="liquid-blob right-[-9rem] bottom-[-8rem] bg-blue-700/28" />
       {/* Left Panel */}
       <div className="hidden lg:flex flex-col justify-between w-1/2 p-12 relative overflow-hidden">
         <div className="absolute inset-0 gradient-brand opacity-10" />
-        <div className="absolute top-1/4 -left-20 w-72 h-72 bg-purple-600/20 rounded-full blur-3xl" />
-        <div className="absolute bottom-1/4 right-0 w-64 h-64 bg-indigo-400/15 rounded-full blur-3xl" />
+        <div className="absolute top-1/4 -left-20 w-72 h-72 bg-blue-600/16 rounded-full blur-3xl" />
+        <div className="absolute bottom-1/4 right-0 w-64 h-64 bg-sky-400/12 rounded-full blur-3xl" />
 
         <div className="relative z-10 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl gradient-brand flex items-center justify-center font-bold text-xl shadow-glow-brand">M</div>
+          <div className="premium-logo w-10 h-10 rounded-xl flex items-center justify-center font-bold text-xl text-white">M</div>
           <span className="font-display font-bold text-2xl text-white">ManaKhata</span>
         </div>
 
@@ -83,7 +85,7 @@ export default function LoginPage() {
         >
           {/* Mobile logo */}
           <div className="lg:hidden flex items-center gap-2 mb-8">
-            <div className="w-8 h-8 rounded-lg gradient-brand flex items-center justify-center font-bold shadow-glow-brand">M</div>
+            <div className="premium-logo w-8 h-8 rounded-lg flex items-center justify-center font-bold text-white">M</div>
             <span className="font-display font-bold text-xl text-white">ManaKhata</span>
           </div>
 

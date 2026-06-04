@@ -8,7 +8,9 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import java.util.Collection;
 import java.util.List;
 
@@ -32,6 +34,7 @@ public class User extends BaseEntity implements UserDetails {
     private String phone;
 
     @Column(name = "password_hash", nullable = false)
+    @JsonIgnore
     private String passwordHash;
 
     @Column(name = "avatar_url")
@@ -51,6 +54,7 @@ public class User extends BaseEntity implements UserDetails {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "household_id")
+    @JsonBackReference("user-household")
     private Household household;
 
     @Column(name = "is_verified")
@@ -87,31 +91,38 @@ public class User extends BaseEntity implements UserDetails {
     @Column(name = "fcm_token")
     private String fcmToken;
 
-    // UserDetails implementation
+    // UserDetails implementation — @JsonIgnore prevents security fields from leaking into API responses
     @Override
+    @JsonIgnore
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return List.of(new SimpleGrantedAuthority("ROLE_" + role.name()));
     }
 
     @Override
+    @JsonIgnore
     public String getPassword() {
         return passwordHash;
     }
 
     @Override
+    @JsonIgnore
     public String getUsername() {
         return email;
     }
 
     @Override
+    @JsonIgnore
     public boolean isAccountNonExpired() { return true; }
 
     @Override
+    @JsonIgnore
     public boolean isAccountNonLocked() { return isActive; }
 
     @Override
+    @JsonIgnore
     public boolean isCredentialsNonExpired() { return true; }
 
     @Override
+    @JsonIgnore
     public boolean isEnabled() { return isActive; }
 }

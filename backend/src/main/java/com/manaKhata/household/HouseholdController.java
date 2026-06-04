@@ -26,7 +26,7 @@ public class HouseholdController {
     public ResponseEntity<ApiResponse<Map<String, Object>>> getMyHousehold(
             @AuthenticationPrincipal User currentUser
     ) {
-        Household household = currentUser.getHousehold();
+        Household household = resolveHousehold(currentUser);
         if (household == null) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(ApiResponse.error("No household found"));
@@ -61,7 +61,11 @@ public class HouseholdController {
                     .body(ApiResponse.error("Only househead can update household"));
         }
 
-        Household household = currentUser.getHousehold();
+        Household household = resolveHousehold(currentUser);
+        if (household == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(ApiResponse.error("No household found"));
+        }
         if (request.getName() != null) household.setName(request.getName());
         if (request.getDescription() != null) household.setDescription(request.getDescription());
         if (request.getAddress() != null) household.setAddress(request.getAddress());
@@ -142,5 +146,14 @@ public class HouseholdController {
         userRepository.save(member);
 
         return ResponseEntity.ok(ApiResponse.success("₹" + amount + " allocated to " + member.getFullName()));
+    }
+
+    private Household resolveHousehold(User currentUser) {
+        if (currentUser == null || currentUser.getHousehold() == null || currentUser.getHousehold().getId() == null) {
+            return null;
+        }
+
+        return householdRepository.findById(currentUser.getHousehold().getId())
+                .orElse(null);
     }
 }

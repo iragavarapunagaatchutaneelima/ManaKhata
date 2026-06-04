@@ -3,6 +3,7 @@ package com.manaKhata.reimbursement;
 import com.manaKhata.common.BaseEntity;
 import com.manaKhata.auth.User;
 import com.manaKhata.household.Household;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -19,14 +20,17 @@ public class Reimbursement extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "payer_id", nullable = false)
+    @JsonIgnoreProperties({"household", "passwordHash", "hibernateLazyInitializer", "handler"})
     private User payer; // Who paid initially
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "reimbursee_id")
+    @JsonIgnoreProperties({"household", "passwordHash", "hibernateLazyInitializer", "handler"})
     private User reimbursee; // Who needs to pay back (null = household)
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "household_id", nullable = false)
+    @JsonIgnoreProperties({"members", "hibernateLazyInitializer", "handler"})
     private Household household;
 
     @Column(name = "amount", nullable = false)
@@ -61,5 +65,6 @@ public class Reimbursement extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "approved_by_id")
+    @JsonIgnoreProperties({"household", "passwordHash", "hibernateLazyInitializer", "handler"})
     private User approvedBy;
 }

@@ -7,10 +7,12 @@ interface AuthState {
   user: User | null
   isLoading: boolean
   isAuthenticated: boolean
+  hasHydrated: boolean
   login: (email: string, password: string) => Promise<void>
   register: (data: any) => Promise<void>
   logout: () => void
   updateUser: (data: Partial<User>) => void
+  setHasHydrated: (hasHydrated: boolean) => void
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -19,6 +21,7 @@ export const useAuthStore = create<AuthState>()(
       user: null,
       isLoading: false,
       isAuthenticated: false,
+      hasHydrated: false,
 
       login: async (email, password) => {
         set({ isLoading: true })
@@ -64,10 +67,15 @@ export const useAuthStore = create<AuthState>()(
         const current = get().user
         if (current) set({ user: { ...current, ...data } })
       },
+
+      setHasHydrated: (hasHydrated) => set({ hasHydrated }),
     }),
     {
-      name: 'mk_auth',
+      name: 'mk_auth_v2',
       partialize: (state) => ({ user: state.user, isAuthenticated: state.isAuthenticated }),
+      onRehydrateStorage: () => (state) => {
+        state?.setHasHydrated(true)
+      },
     }
   )
 )

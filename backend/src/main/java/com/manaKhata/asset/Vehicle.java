@@ -3,6 +3,7 @@ package com.manaKhata.asset;
 import com.manaKhata.common.BaseEntity;
 import com.manaKhata.auth.User;
 import com.manaKhata.household.Household;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -13,10 +14,12 @@ public class Vehicle extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "owner_id", nullable = false)
+    @JsonIgnoreProperties({"household", "passwordHash", "hibernateLazyInitializer", "handler"})
     private User owner;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "household_id", nullable = false)
+    @JsonIgnoreProperties({"members", "hibernateLazyInitializer", "handler"})
     private Household household;
 
     @Column(name = "name", nullable = false)

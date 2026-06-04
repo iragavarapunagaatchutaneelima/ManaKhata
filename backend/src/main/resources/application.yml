@@ -2,46 +2,70 @@ spring:
   application:
     name: ManaKhata
 
-  # H2 In-Memory Database (Development)
+  # ─── H2 In-Memory Database (Development) ────────────────────────────────
+  # For production, set SPRING_DATASOURCE_URL, SPRING_DATASOURCE_USERNAME,
+  # and SPRING_DATASOURCE_PASSWORD environment variables and switch to MySQL.
   datasource:
-    url: jdbc:h2:mem:manaKhatadb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;NON_KEYWORDS=MONTH,YEAR,VALUE,KEY,DAY,MINUTE,SECOND,HOUR
-    driver-class-name: org.h2.Driver
-    username: sa
-    password: ""
+    url: ${SPRING_DATASOURCE_URL:jdbc:h2:mem:manaKhatadb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;NON_KEYWORDS=MONTH,YEAR,VALUE,KEY,DAY,MINUTE,SECOND,HOUR}
+    driver-class-name: ${SPRING_DATASOURCE_DRIVER:org.h2.Driver}
+    username: ${SPRING_DATASOURCE_USERNAME:sa}
+    password: ${SPRING_DATASOURCE_PASSWORD:}
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+      idle-timeout: 30000
+      connection-timeout: 20000
+      max-lifetime: 1800000
 
   h2:
     console:
-      enabled: true
+      # SECURITY: Disable H2 console in production. Set H2_CONSOLE_ENABLED=false in prod.
+      enabled: ${H2_CONSOLE_ENABLED:true}
       path: /h2-console
 
   jpa:
+    open-in-view: false
     hibernate:
-      ddl-auto: create-drop
+      # 'update' preserves data between restarts (was 'create-drop' which wiped data)
+      ddl-auto: ${JPA_DDL_AUTO:update}
     show-sql: false
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.H2Dialect
+        # dialect is auto-detected by Hibernate; set HIBERNATE_DIALECT env var for non-standard DBs
         format_sql: true
+        jdbc:
+          batch_size: 25
+        order_inserts: true
+        order_updates: true
 
-  # For production MySQL, use:
-  # datasource:
-  #   url: jdbc:mysql://localhost:3306/manaKhatadb?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC
-  #   username: ${DB_USERNAME:root}
-  #   password: ${DB_PASSWORD:}
-  #   driver-class-name: com.mysql.cj.jdbc.Driver
-  # jpa:
-  #   properties:
-  #     hibernate:
-  #       dialect: org.hibernate.dialect.MySQL8Dialect
+  # ─── Production MySQL Configuration ─────────────────────────────────────
+  # Uncomment and set environment variables for MySQL:
+  # SPRING_DATASOURCE_URL=jdbc:mysql://localhost:3306/manaKhatadb?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=Asia/Kolkata
+  # SPRING_DATASOURCE_DRIVER=com.mysql.cj.jdbc.Driver
+  # HIBERNATE_DIALECT=org.hibernate.dialect.MySQL8Dialect
+  # JPA_DDL_AUTO=validate (use Flyway for production migrations)
+
+  # ─── RabbitMQ (Optional) ────────────────────────────────────────────────
+  # If RabbitMQ is not available, disable auto-configuration:
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.amqp.RabbitAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.mongo.MongoDataAutoConfiguration
+      - org.springframework.boot.autoconfigure.mongo.MongoAutoConfiguration
 
 server:
-  port: 8080
+  port: ${PORT:8080}
   error:
     include-message: always
     include-binding-errors: always
+  compression:
+    enabled: true
+    mime-types: application/json,application/xml,text/html,text/xml,text/plain
 
 manaKhata:
   jwt:
+    # SECURITY: Always set JWT_SECRET environment variable in production!
+    # Min 256 bits. Never use the default in production.
     secret: ${JWT_SECRET:manaKhata-super-secret-jwt-key-2024-enterprise-grade-minimum-256-bits}
     expiration: 86400000       # 24 hours in ms
     refresh-expiration: 604800000  # 7 days in ms
@@ -51,10 +75,32 @@ manaKhata:
 
   cors:
     allowed-origins:
-      - http://localhost:3000
-      - http://localhost:3001
+      - ${CORS_ORIGIN_1:http://localhost:3000}
+      - ${CORS_ORIGIN_2:http://localhost:3001}
 
 logging:
   level:
-    com.manaKhata: DEBUG
+    com.manaKhata: ${LOG_LEVEL:INFO}
     org.springframework.security: WARN
+    org.hibernate.SQL: WARN
+  file:
+    name: logs/manaKhata.log
+  logback:
+    rollingpolicy:
+      max-file-size: 10MB
+      max-history: 7
+      total-size-cap: 100MB
+
+management:
+  health:
+    rabbit:
+      enabled: false
+    mongo:
+      enabled: false
+  endpoint:
+    health:
+      show-details: when-authorized
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics

@@ -8,8 +8,8 @@ export default function PageTransition({ children, className = '' }: { children:
       initial={{ opacity: 0, y: 15 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -15 }}
-      transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-      className={`w-full h-full ${className}`}
+      transition={{ type: 'spring', stiffness: 260, damping: 28, mass: 0.82 }}
+      className={`w-full h-full will-change-transform ${className}`}
     >
       {children}
     </motion.div>

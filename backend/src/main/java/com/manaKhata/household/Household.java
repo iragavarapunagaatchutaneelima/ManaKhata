@@ -1,6 +1,8 @@
 package com.manaKhata.household;
 
 import com.manaKhata.common.BaseEntity;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -46,6 +48,7 @@ public class Household extends BaseEntity {
     private Boolean isActive = true;
 
     @OneToMany(mappedBy = "household", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonManagedReference("user-household")
     @Builder.Default
     private List<com.manaKhata.auth.User> members = new ArrayList<>();
 }

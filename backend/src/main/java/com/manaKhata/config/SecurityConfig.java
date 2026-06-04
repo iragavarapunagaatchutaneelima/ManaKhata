@@ -39,7 +39,14 @@ public class SecurityConfig {
     private String allowedOriginsStr;
 
     private List<String> getAllowedOrigins() {
-        return Arrays.asList(allowedOriginsStr.split(","));
+        // Handle both comma-separated string and Spring's list-to-string conversion
+        if (allowedOriginsStr == null || allowedOriginsStr.isBlank()) {
+            return List.of("http://localhost:3000", "http://localhost:3001");
+        }
+        return Arrays.stream(allowedOriginsStr.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isBlank())
+                .toList();
     }
 
     @Bean
@@ -71,7 +78,15 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(getAllowedOrigins());
+        // Use allowedOriginPatterns to support credentials + wildcard fallback
+        List<String> origins = getAllowedOrigins();
+        config.setAllowedOrigins(origins);
+        // Also allow common dev ports as patterns
+        config.setAllowedOriginPatterns(List.of(
+            "http://localhost:[*]",
+            "http://127.0.0.1:[*]",
+            "https://*.vercel.app"
+        ));
         config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);

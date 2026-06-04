@@ -7,7 +7,9 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   LayoutDashboard, Home, Receipt, RefreshCcw, Wallet, Car,
   PiggyBank, Brain, BarChart3, Plane, MessageSquare, Settings,
-  ChevronLeft, ChevronRight, Bell, Sun, Moon, Menu, X, LogOut, User
+  ChevronLeft, ChevronRight, Bell, Sun, Moon, Menu, X, LogOut, User,
+  ShoppingCart, SplitSquareVertical, Bot, Target, CheckSquare, Briefcase, HeartPulse,
+  Award, FileText
 } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 import { getRoleBadge } from '@/hooks/useUtils'
@@ -15,19 +17,29 @@ import { useWebSocket } from '@/hooks/useWebSocket'
 import FloatingCalculator from '@/components/ui/FloatingCalculator'
 import toast from 'react-hot-toast'
 import { useTheme } from 'next-themes'
+import StatementDownloader from '@/components/StatementDownloader'
 
 const navItems = [
   { href: '/dashboard',       icon: LayoutDashboard, label: 'Dashboard',      group: 'main' },
   { href: '/household',       icon: Home,            label: 'Household',      group: 'main' },
+  { href: '/grocery',         icon: ShoppingCart,    label: 'Groceries',      group: 'main' },
+  { href: '/chores',          icon: CheckSquare,     label: 'Chores',         group: 'main' },
   { href: '/expenses',        icon: Receipt,         label: 'Expenses',       group: 'finance' },
   { href: '/reimbursements',  icon: RefreshCcw,      label: 'Reimburse',      group: 'finance' },
+  { href: '/splits',          icon: SplitSquareVertical, label: 'Split IOUs', group: 'finance' },
   { href: '/wallet',          icon: Wallet,          label: 'Wallet',         group: 'finance' },
   { href: '/budget',          icon: PiggyBank,       label: 'Budget',         group: 'finance' },
+  { href: '/goals',           icon: Target,          label: 'Savings Goals',  group: 'finance' },
+  { href: '/investments',     icon: Briefcase,       label: 'Investments',    group: 'finance' },
+  { href: '/medical',         icon: HeartPulse,      label: 'Medical Vault',  group: 'finance' },
+  { href: '/tax',             icon: FileText,        label: 'Tax Assistant',  group: 'finance' },
   { href: '/vehicles',        icon: Car,             label: 'Vehicles',       group: 'assets' },
   { href: '/trips',           icon: Plane,           label: 'Trips',          group: 'assets' },
   { href: '/ai-advisor',      icon: Brain,           label: 'AI Advisor',     group: 'intelligence' },
   { href: '/analytics',       icon: BarChart3,       label: 'Analytics',      group: 'intelligence' },
   { href: '/chat',            icon: MessageSquare,   label: 'Family Chat',    group: 'social' },
+  { href: '/achievements',    icon: Award,           label: 'Achievements',   group: 'social' },
+  { href: '/integrations',    icon: Bot,             label: 'Integrations',   group: 'account' },
   { href: '/settings',        icon: Settings,        label: 'Settings',       group: 'account' },
 ]
 
@@ -76,7 +88,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     <div className="flex flex-col h-full">
       {/* Logo */}
       <div className={`flex items-center gap-3 p-4 mb-2 ${collapsed && !mobile ? 'justify-center' : ''}`}>
-        <div className="w-9 h-9 min-w-[36px] rounded-xl gradient-brand flex items-center justify-center font-bold text-lg shadow-glow-brand">
+        <div className="premium-logo w-9 h-9 min-w-[36px] rounded-xl flex items-center justify-center font-bold text-lg text-white">
           M
         </div>
         {(!collapsed || mobile) && (
@@ -125,7 +137,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <div className="p-3 mt-2 border-t" style={{ borderColor: 'var(--sidebar-border)' }}>
         <div className={`flex items-center gap-3 p-2 rounded-xl ${collapsed && !mobile ? 'justify-center' : ''}`}
           style={{ background: 'var(--sidebar-hover)' }}>
-          <div className="w-8 h-8 min-w-[32px] rounded-full gradient-brand flex items-center justify-center text-white font-bold text-sm">
+          <div className="premium-logo w-8 h-8 min-w-[32px] rounded-full flex items-center justify-center text-white font-bold text-sm">
             {user.fullName.charAt(0)}
           </div>
           {(!collapsed || mobile) && (
@@ -145,10 +157,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   )
 
   return (
-    <div className="flex h-screen overflow-hidden" style={{ background: 'var(--bg-primary)' }}>
+    <div className="premium-app-shell flex h-screen overflow-hidden text-slate-100">
+      <div className="liquid-blob left-[-8rem] top-[8rem] bg-sky-400/35" />
+      <div className="liquid-blob right-[-10rem] top-[-6rem] bg-blue-600/30" />
+      <div className="liquid-blob bottom-[-10rem] left-[45%] bg-cyan-900/35" />
       {/* Desktop Sidebar */}
       <aside
-        className="sidebar hidden lg:flex flex-col h-full relative z-20 transition-all duration-300"
+        className="sidebar premium-sidebar hidden lg:flex flex-col h-full relative z-20 transition-all duration-300"
         style={{ width: collapsed ? '64px' : '220px' }}
       >
         <SidebarContent />
@@ -172,7 +187,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               onClick={() => setMobileOpen(false)}
             />
             <motion.aside
-              className="sidebar fixed left-0 top-0 h-full z-40 lg:hidden flex flex-col"
+              className="sidebar premium-sidebar fixed left-0 top-0 h-full z-40 lg:hidden flex flex-col"
               style={{ width: '240px' }}
               initial={{ x: -240 }} animate={{ x: 0 }} exit={{ x: -240 }}
               transition={{ type: 'spring', damping: 25, stiffness: 250 }}
@@ -191,7 +206,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Top Bar */}
-        <header className="h-16 flex items-center gap-4 px-4 md:px-6 flex-shrink-0 border-b"
+        <header className="premium-topbar h-16 flex items-center gap-4 px-4 md:px-6 flex-shrink-0 border-b"
           style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border-color)' }}>
           {/* Mobile menu button */}
           <button className="lg:hidden p-2 rounded-lg" style={{ color: 'var(--text-muted)' }}
@@ -211,6 +226,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
           {/* Actions */}
           <div className="flex items-center gap-2">
+            <StatementDownloader className="hidden sm:block" />
+            
             {/* Theme toggle */}
             <button
               id="theme-toggle"
@@ -238,7 +255,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             {/* User avatar */}
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl cursor-pointer"
               style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
-              <div className="w-7 h-7 rounded-full gradient-brand flex items-center justify-center text-white font-bold text-xs">
+              <div className="premium-logo w-7 h-7 rounded-full flex items-center justify-center text-white font-bold text-xs">
                 {user.fullName.charAt(0)}
               </div>
               <span className="hidden sm:block text-sm font-medium truncate max-w-28" style={{ color: 'var(--text-primary)' }}>
