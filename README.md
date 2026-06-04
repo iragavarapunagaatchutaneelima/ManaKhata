@@ -35,6 +35,11 @@ The frontend automatically falls back to local demo data when the backend is una
 
 ## Quick Start
 
+### Live Deployment
+
+The frontend is live and deployed on Vercel:
+**[https://frontend-phi-lemon-1hkzt9uj98.vercel.app](https://frontend-phi-lemon-1hkzt9uj98.vercel.app)**
+
 ### Frontend
 
 ```bash
