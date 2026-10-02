@@ -9,6 +9,7 @@ import { formatCurrency, getRoleBadge } from '@/hooks/useUtils'
 import type { HouseholdMember } from '@/types'
 import toast from 'react-hot-toast'
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts'
+import { CHART_PALETTE } from '@/constants/theme'
  
 interface WalletActivity {
   id: string
@@ -121,7 +122,7 @@ export default function WalletPage() {
     value: m.walletBalance
   })).filter(item => item.value > 0)
  
-  const CHART_COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6', '#06b6d4']
+  const CHART_COLORS = CHART_PALETTE
  
   return (
     <div className="max-w-6xl mx-auto space-y-6">
@@ -129,23 +130,21 @@ export default function WalletPage() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Personal Balance Card */}
         <motion.div 
-          className="relative overflow-hidden rounded-2xl p-6 text-white shadow-glow-brand flex flex-col justify-between h-48"
-          style={{ background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)' }}
+          className="relative overflow-hidden rounded-2xl p-6 gradient-brand flex flex-col justify-between h-48"
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <div className="absolute inset-0 bg-white/5 backdrop-blur-[1px]" />
           <div className="relative z-10 flex justify-between items-start">
             <div>
-              <span className="text-white/60 text-xs font-semibold uppercase tracking-wider">Your Balance</span>
+              <span className="text-white/75 text-xs font-semibold uppercase tracking-wider">Your Balance</span>
               <h2 className="font-display font-bold text-3xl mt-1">{formatCurrency(personalBalance)}</h2>
             </div>
-            <div className="p-3 rounded-xl bg-white/10">
+            <div className="p-3 rounded-xl bg-white/15">
               <Wallet size={24} />
             </div>
           </div>
           <div className="relative z-10 flex items-center gap-2 text-xs text-white/80">
-            <span className="flex items-center gap-0.5 text-emerald-300 font-semibold">
+            <span className="flex items-center gap-0.5 text-white font-semibold">
               <ArrowUpRight size={14} /> Stable
             </span>
             <span>Allocated from Demo Household Treasury</span>
@@ -191,14 +190,14 @@ export default function WalletPage() {
           <div className="grid grid-cols-2 gap-2 mt-2">
             <button 
               onClick={() => toast.success('Transfer request submitted to Househead (Mocked)')}
-              className="flex items-center justify-center gap-1.5 p-3 rounded-xl border border-white/5 bg-white/4 text-xs font-semibold hover:bg-white/8 transition-all"
+              className="flex items-center justify-center gap-1.5 p-3 rounded-xl border border-[color:var(--border-color)] bg-[var(--surface-2)] text-xs font-semibold hover:bg-[var(--sidebar-hover)] transition-all"
               style={{ color: 'var(--text-secondary)' }}
             >
-              <ArrowDownLeft size={14} className="text-indigo-400" /> Request Funds
+              <ArrowDownLeft size={14} className="text-brand-400" /> Request Funds
             </button>
             <button 
               onClick={() => toast.success('P2P transfer request initiated (Mocked)')}
-              className="flex items-center justify-center gap-1.5 p-3 rounded-xl border border-white/5 bg-white/4 text-xs font-semibold hover:bg-white/8 transition-all"
+              className="flex items-center justify-center gap-1.5 p-3 rounded-xl border border-[color:var(--border-color)] bg-[var(--surface-2)] text-xs font-semibold hover:bg-[var(--sidebar-hover)] transition-all"
               style={{ color: 'var(--text-secondary)' }}
             >
               <Share2 size={14} className="text-emerald-400" /> Send to Member
@@ -250,7 +249,7 @@ export default function WalletPage() {
               <div className="absolute inset-0 gradient-brand opacity-[0.03]" />
               <div className="relative z-10">
                 <div className="flex items-center gap-1.5 mb-2">
-                  <Sparkles size={16} className="text-indigo-400 animate-pulse" />
+                  <Sparkles size={16} className="text-brand-400 animate-pulse" />
                   <h3 className="font-display font-semibold text-base" style={{ color: 'var(--text-primary)' }}>
                     Allocate Wallet Funds
                   </h3>
@@ -315,7 +314,7 @@ export default function WalletPage() {
                       ))}
                     </Pie>
                     <Tooltip 
-                      contentStyle={{ background: 'rgba(10, 15, 30, 0.95)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px' }}
+                      contentStyle={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '10px', color: 'var(--text-primary)' }}
                       formatter={(val: any) => [`₹${val}`, 'Wallet Balance']}
                     />
                     <Legend verticalAlign="bottom" height={36} iconType="circle" />
@@ -336,9 +335,9 @@ export default function WalletPage() {
             </h3>
             <div className="space-y-3 max-h-52 overflow-y-auto pr-1">
               {activities.map(act => (
-                <div key={act.id} className="flex items-center justify-between p-3 rounded-xl border border-white/5 bg-white/4">
+                <div key={act.id} className="flex items-center justify-between p-3 rounded-xl border border-[color:var(--border-color)] bg-[var(--surface-2)]">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg flex items-center justify-center text-indigo-400 bg-indigo-500/10">
+                    <div className="w-8 h-8 rounded-lg flex items-center justify-center text-brand-400 bg-brand-500/10">
                       <ArrowUpRight size={16} />
                     </div>
                     <div>
@@ -349,7 +348,7 @@ export default function WalletPage() {
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="text-sm font-bold text-indigo-400">-₹{act.amount}</div>
+                    <div className="text-sm font-bold text-brand-400">-₹{act.amount}</div>
                     <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 font-semibold uppercase tracking-wider">
                       {act.status}
                     </span>

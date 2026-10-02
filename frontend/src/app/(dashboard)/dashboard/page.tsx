@@ -64,13 +64,9 @@ export default function DashboardPage() {
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
       >
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(56,189,248,0.14),transparent_28%),radial-gradient(circle_at_80%_10%,rgba(37,99,235,0.13),transparent_30%),linear-gradient(135deg,rgba(255,255,255,0.055),transparent)] pointer-events-none" />
-        <div className="absolute -right-16 -top-20 h-56 w-56 rounded-full bg-sky-300/12 blur-2xl pointer-events-none" />
-        <div className="absolute right-10 bottom-0 h-28 w-72 rounded-full bg-blue-500/10 blur-2xl pointer-events-none" />
-        <div className="flow-line" />
         <div className="relative z-10 flex items-center justify-between flex-wrap gap-5">
           <div>
-            <div className="badge badge-brand mb-3 border border-cyan-300/20 bg-cyan-300/10 text-cyan-200">
+            <div className="badge badge-brand mb-3">
               <Sparkles size={12} /> Live household command center
             </div>
             <h2 className="font-display font-bold text-2xl" style={{ color: 'var(--text-primary)' }}>
@@ -81,7 +77,7 @@ export default function DashboardPage() {
             </p>
           </div>
           <div className="flex items-center gap-3">
-            <div className="hidden md:flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.06] px-3 py-2 text-xs text-slate-300">
+            <div className="hidden md:flex items-center gap-2 rounded-2xl border border-[color:var(--border-color)] bg-white/[0.06] px-3 py-2 text-xs text-[color:var(--text-primary)]">
               <Activity size={15} className="text-emerald-300" />
               Realtime demo stream
             </div>

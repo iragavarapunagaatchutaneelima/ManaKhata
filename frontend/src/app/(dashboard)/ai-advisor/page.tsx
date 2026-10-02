@@ -7,6 +7,7 @@ import { formatCurrency } from '@/hooks/useUtils'
 import type { InvestmentAdvice, FinancialHealthScore, AiInsight, ExpensePrediction } from '@/types'
 import HealthScoreRing from '@/components/ui/HealthScoreRing'
 import AiInsightsPanel from '@/components/ui/AiInsightsPanel'
+import { CHART_PALETTE } from '@/constants/theme'
 
 const riskColors: Record<string, string> = {
   'Conservative':    'gradient-emerald',
@@ -115,7 +116,7 @@ export default function AiAdvisorPage() {
               </h3>
               <div className="space-y-3">
                 {Object.entries(advice.allocation).map(([key, val], i) => {
-                  const colors = ['#6366f1','#10b981','#f59e0b','#06b6d4']
+                  const colors = CHART_PALETTE
                   return (
                     <div key={key}>
                       <div className="flex justify-between text-sm mb-1">

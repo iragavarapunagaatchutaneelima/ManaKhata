@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
@@ -12,8 +12,13 @@ export default function LoginPage() {
   const [email, setEmail] = useState('demo@manaKhata.app')
   const [password, setPassword] = useState('Demo@1234')
   const [showPass, setShowPass] = useState(false)
-  const { login, isLoading } = useAuthStore()
+  const { login, isLoading, isAuthenticated, hasHydrated } = useAuthStore()
   const router = useRouter()
+
+  // Already signed in (e.g. the installed app reopening): go straight to the dashboard.
+  useEffect(() => {
+    if (hasHydrated && isAuthenticated) router.replace('/dashboard')
+  }, [hasHydrated, isAuthenticated, router])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -35,26 +40,21 @@ export default function LoginPage() {
 
   return (
     <div className="premium-app-shell min-h-screen flex">
-      <div className="liquid-blob left-[-8rem] top-[8rem] bg-sky-400/32" />
-      <div className="liquid-blob right-[-9rem] bottom-[-8rem] bg-blue-700/28" />
       {/* Left Panel */}
       <div className="hidden lg:flex flex-col justify-between w-1/2 p-12 relative overflow-hidden">
-        <div className="absolute inset-0 gradient-brand opacity-10" />
-        <div className="absolute top-1/4 -left-20 w-72 h-72 bg-blue-600/16 rounded-full blur-3xl" />
-        <div className="absolute bottom-1/4 right-0 w-64 h-64 bg-sky-400/12 rounded-full blur-3xl" />
 
         <div className="relative z-10 flex items-center gap-3">
           <div className="premium-logo w-10 h-10 rounded-xl flex items-center justify-center font-bold text-xl text-white">M</div>
-          <span className="font-display font-bold text-2xl text-white">ManaKhata</span>
+          <span className="font-display font-bold text-2xl text-[color:var(--text-primary)]">ManaKhata</span>
         </div>
 
         <div className="relative z-10">
           <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-            <h2 className="font-display font-bold text-4xl text-white mb-6 leading-snug">
+            <h2 className="font-display font-bold text-4xl text-[color:var(--text-primary)] mb-6 leading-snug">
               The Financial Brain<br />
               <span className="text-gradient-brand">of Your Household</span>
             </h2>
-            <p className="text-white/50 text-lg leading-relaxed mb-8">
+            <p className="text-[color:var(--text-secondary)] text-lg leading-relaxed mb-8">
               AI-powered insights, reimbursement tracking, shared asset management, 
               and family financial collaboration — all in one premium platform.
             </p>
@@ -62,7 +62,7 @@ export default function LoginPage() {
             {/* Feature pills */}
             <div className="flex flex-wrap gap-2">
               {['AI Insights', 'Reimbursements', 'Family Wallets', 'Vehicle Tracking', 'Health Score', 'Investments'].map(f => (
-                <span key={f} className="px-3 py-1.5 rounded-full bg-white/8 border border-white/10 text-white/60 text-sm flex items-center gap-1.5">
+                <span key={f} className="px-3 py-1.5 rounded-full bg-[var(--surface-2)] border border-[color:var(--border-color)] text-[color:var(--text-secondary)] text-sm flex items-center gap-1.5">
                   <Sparkles size={12} className="text-brand-400" /> {f}
                 </span>
               ))}
@@ -70,7 +70,7 @@ export default function LoginPage() {
           </motion.div>
         </div>
 
-        <div className="relative z-10 text-white/30 text-sm">
+        <div className="relative z-10 text-[color:var(--text-muted)] text-sm">
           © 2026 ManaKhata
         </div>
       </div>
@@ -86,25 +86,25 @@ export default function LoginPage() {
           {/* Mobile logo */}
           <div className="lg:hidden flex items-center gap-2 mb-8">
             <div className="premium-logo w-8 h-8 rounded-lg flex items-center justify-center font-bold text-white">M</div>
-            <span className="font-display font-bold text-xl text-white">ManaKhata</span>
+            <span className="font-display font-bold text-xl text-[color:var(--text-primary)]">ManaKhata</span>
           </div>
 
-          <div className="glass-card p-8" style={{ background: 'rgba(255,255,255,0.04)', borderColor: 'rgba(255,255,255,0.08)' }}>
-            <h1 className="font-display font-bold text-2xl text-white mb-1">Welcome back</h1>
-            <p className="text-white/40 text-sm mb-8">Sign in to your household account</p>
+          <div className="glass-card p-8">
+            <h1 className="font-display font-bold text-2xl text-[color:var(--text-primary)] mb-1">Welcome back</h1>
+            <p className="text-[color:var(--text-muted)] text-sm mb-8">Sign in to your household account</p>
 
             <form onSubmit={handleSubmit} className="space-y-5">
               <div>
-                <label className="block text-white/60 text-sm font-medium mb-1.5">Email address</label>
+                <label className="block text-[color:var(--text-secondary)] text-sm font-medium mb-1.5">Email address</label>
                 <div className="relative">
-                  <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/30" />
+                  <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[color:var(--text-muted)]" />
                   <input
                     id="login-email"
                     type="email"
                     value={email}
                     onChange={e => setEmail(e.target.value)}
                     className="input-field pl-10"
-                    style={{ background: 'rgba(255,255,255,0.06)', borderColor: 'rgba(255,255,255,0.10)', color: 'white' }}
+                   
                     placeholder="you@example.com"
                     required
                   />
@@ -112,23 +112,23 @@ export default function LoginPage() {
               </div>
 
               <div>
-                <label className="block text-white/60 text-sm font-medium mb-1.5">Password</label>
+                <label className="block text-[color:var(--text-secondary)] text-sm font-medium mb-1.5">Password</label>
                 <div className="relative">
-                  <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/30" />
+                  <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[color:var(--text-muted)]" />
                   <input
                     id="login-password"
                     type={showPass ? 'text' : 'password'}
                     value={password}
                     onChange={e => setPassword(e.target.value)}
                     className="input-field pl-10 pr-10"
-                    style={{ background: 'rgba(255,255,255,0.06)', borderColor: 'rgba(255,255,255,0.10)', color: 'white' }}
+                   
                     placeholder="••••••••"
                     required
                   />
                   <button
                     type="button"
                     onClick={() => setShowPass(!showPass)}
-                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors"
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[color:var(--text-muted)] hover:text-[color:var(--text-secondary)] transition-colors"
                   >
                     {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
@@ -143,7 +143,7 @@ export default function LoginPage() {
               >
                 {isLoading ? (
                   <span className="flex items-center gap-2">
-                    <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    <span className="w-4 h-4 border-2 border-[color:var(--border-color)] border-t-current rounded-full animate-spin" />
                     Signing in...
                   </span>
                 ) : (
@@ -156,7 +156,7 @@ export default function LoginPage() {
 
             {/* Demo logins */}
             <div className="mt-6">
-              <p className="text-white/30 text-xs text-center mb-3">— Quick demo access —</p>
+              <p className="text-[color:var(--text-muted)] text-xs text-center mb-3">— Quick demo access —</p>
               <div className="grid grid-cols-2 gap-2">
                 {demoLogins.map(demo => (
                   <button
@@ -164,16 +164,16 @@ export default function LoginPage() {
                     id={`demo-${demo.label.toLowerCase()}`}
                     type="button"
                     onClick={() => { setEmail(demo.email); setPassword('Demo@1234') }}
-                    className="px-3 py-2 rounded-xl text-xs font-medium border border-white/8 bg-white/4 text-white/50 hover:bg-white/8 hover:text-white/70 transition-all text-left"
+                    className="px-3 py-2 rounded-xl text-xs font-medium border border-[color:var(--border-color)] bg-[var(--surface-2)] text-[color:var(--text-secondary)] hover:bg-[var(--sidebar-hover)] hover:text-[color:var(--text-secondary)] transition-all text-left"
                   >
-                    <div className="text-white/70 font-semibold">{demo.label}</div>
-                    <div className="text-white/30 text-[10px] truncate">{demo.email}</div>
+                    <div className="text-[color:var(--text-secondary)] font-semibold">{demo.label}</div>
+                    <div className="text-[color:var(--text-muted)] text-[10px] truncate">{demo.email}</div>
                   </button>
                 ))}
               </div>
             </div>
 
-            <p className="text-center text-white/30 text-sm mt-6">
+            <p className="text-center text-[color:var(--text-muted)] text-sm mt-6">
               New household?{' '}
               <Link href="/auth/register" className="text-brand-400 hover:text-brand-300 font-medium transition-colors">
                 Create account

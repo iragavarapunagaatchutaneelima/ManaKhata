@@ -147,23 +147,23 @@ export default function MedicalPage() {
                   <div>
                     <h3 className="font-display font-bold text-lg" style={{ color: 'var(--text-primary)' }}>{policy.provider}</h3>
                     <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>{policy.policyNumber}</p>
-                    <span className="inline-block mt-2 text-xs px-2 py-0.5 rounded bg-white/5" style={{ color: 'var(--text-muted)' }}>{policy.policyType}</span>
+                    <span className="inline-block mt-2 text-xs px-2 py-0.5 rounded bg-[var(--surface-2)]" style={{ color: 'var(--text-muted)' }}>{policy.policyType}</span>
                   </div>
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4 mb-4">
-                <div className="bg-white/5 rounded-lg p-3">
+                <div className="bg-[var(--surface-2)] rounded-lg p-3">
                   <div className="text-[10px] uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Coverage</div>
                   <div className="font-semibold text-lg mt-1" style={{ color: 'var(--text-primary)' }}>{formatCurrency(policy.coverageAmount)}</div>
                 </div>
-                <div className="bg-white/5 rounded-lg p-3">
+                <div className="bg-[var(--surface-2)] rounded-lg p-3">
                   <div className="text-[10px] uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Premium</div>
                   <div className="font-semibold text-lg mt-1" style={{ color: 'var(--text-primary)' }}>{formatCurrency(policy.premiumAmount)}</div>
                 </div>
               </div>
 
-              <div className="flex items-center justify-between text-sm border-t border-white/5 pt-4 mt-2">
+              <div className="flex items-center justify-between text-sm border-t border-[color:var(--border-color)] pt-4 mt-2">
                 <div style={{ color: 'var(--text-muted)' }}>Holder: <span style={{ color: 'var(--text-primary)' }}>{policy.owner.fullName}</span></div>
                 <div className={expiringSoon ? 'text-red-400 font-semibold flex items-center gap-1' : 'text-emerald-400 flex items-center gap-1'}>
                   {expiringSoon ? <AlertTriangle size={14}/> : <CheckCircle2 size={14}/>} Valid till {formatDate(policy.expiryDate)}

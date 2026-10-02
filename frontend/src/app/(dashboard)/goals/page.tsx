@@ -173,7 +173,7 @@ export default function GoalsPage() {
                   </span>
                   <span style={{ color: 'var(--text-muted)' }}>{progress.toFixed(1)}%</span>
                 </div>
-                <div className="h-3 rounded-full bg-black/20 overflow-hidden border border-white/5 relative">
+                <div className="h-3 rounded-full bg-[var(--surface-2)] overflow-hidden border border-[color:var(--border-color)] relative">
                   <motion.div 
                     initial={{ width: 0 }} animate={{ width: `${progress}%` }}
                     transition={{ duration: 1, ease: 'easeOut' }}

@@ -1,0 +1,11 @@
+.next
+node_modules
+android
+out
+assets
+scripts
+capacitor.config.ts
+*.log
+*.png
+!public/**
+tsconfig.tsbuildinfo

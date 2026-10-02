@@ -65,7 +65,7 @@ export default function FloatingCalculator() {
       {/* Floating Toggle Button */}
       <motion.button
         id="floating-calculator"
-        className="fixed bottom-6 right-6 z-50 w-12 h-12 rounded-2xl gradient-brand flex items-center justify-center shadow-glow-brand text-white"
+        className="fixed bottom-20 right-4 lg:bottom-6 lg:right-6 z-30 w-12 h-12 rounded-2xl gradient-brand flex items-center justify-center shadow-glow-brand text-white"
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.95 }}
         onClick={() => setOpen(!open)}
@@ -82,7 +82,7 @@ export default function FloatingCalculator() {
             dragControls={dragControls}
             dragMomentum={false}
             dragElastic={0.1}
-            className="fixed bottom-24 right-6 z-50 w-64 rounded-3xl overflow-hidden select-none"
+            className="fixed bottom-36 right-4 lg:bottom-24 lg:right-6 z-50 w-64 rounded-3xl overflow-hidden select-none"
             style={{
               background: 'var(--bg-secondary)',
               border: '1px solid var(--border-color)',

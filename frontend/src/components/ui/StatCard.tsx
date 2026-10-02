@@ -29,15 +29,12 @@ const StatCard = memo(function StatCard({ id, icon, label, value, sub, gradient,
     <motion.div
       id={id}
       className="glass-card p-5 stat-card overflow-hidden cursor-default"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay, duration: 0.4 }}
-      whileHover={{ y: -6, scale: 1.018, rotateX: 1.5 }}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ delay, duration: 0.2 }}
     >
-      <div className="absolute inset-x-5 top-0 h-px bg-gradient-to-r from-transparent via-white/50 to-transparent" />
-      <div className="absolute -right-10 -top-10 h-28 w-28 rounded-full bg-white/10 blur-2xl" />
       <div className="flex items-start justify-between mb-3">
-        <div className={`w-10 h-10 rounded-xl ${gradient} flex items-center justify-center text-xl shadow-lg ring-1 ring-white/20`}>
+        <div className={`w-10 h-10 rounded-xl ${gradient} flex items-center justify-center text-xl`}>
           {icon}
         </div>
       </div>

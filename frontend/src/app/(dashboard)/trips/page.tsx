@@ -178,7 +178,7 @@ export default function TripsPage() {
           const isOverBudget = totalSpent > trip.budget
 
           return (
-            <motion.div key={trip.id} layout className={`glass-card overflow-hidden border ${isOverBudget ? 'border-red-500/30' : 'border-white/5'}`}>
+            <motion.div key={trip.id} layout className={`glass-card overflow-hidden border ${isOverBudget ? 'border-red-500/30' : 'border-[color:var(--border-color)]'}`}>
               <div className="p-6 cursor-pointer hover:bg-white/[0.02] transition-colors" onClick={() => toggleTrip(trip.id)}>
                 <div className="flex justify-between items-start mb-4">
                   <div className="flex gap-4 items-center">
@@ -202,7 +202,7 @@ export default function TripsPage() {
                   </div>
                 </div>
 
-                <div className="h-2 rounded-full bg-black/20 overflow-hidden">
+                <div className="h-2 rounded-full bg-[var(--surface-2)] overflow-hidden">
                   <motion.div 
                     initial={{ width: 0 }} animate={{ width: `${budgetUsed}%` }}
                     className={`h-full rounded-full ${isOverBudget ? 'bg-red-500' : 'bg-purple-500'}`}
@@ -212,8 +212,8 @@ export default function TripsPage() {
 
               <AnimatePresence>
                 {activeTrip === trip.id && (
-                  <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="border-t border-white/5 bg-black/10">
-                    <div className="p-4 border-b border-white/5 flex gap-2">
+                  <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="border-t border-[color:var(--border-color)] bg-[var(--surface-2)]">
+                    <div className="p-4 border-b border-[color:var(--border-color)] flex gap-2">
                       <input type="text" value={newExpense.description} onChange={e => setNewExpense(n => ({...n, description: e.target.value}))}
                         className="input-field text-sm" placeholder="Expense description..." />
                       <input type="number" value={newExpense.amount} onChange={e => setNewExpense(n => ({...n, amount: e.target.value}))}

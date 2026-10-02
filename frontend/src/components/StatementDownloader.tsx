@@ -139,15 +139,15 @@ export default function StatementDownloader({ className = '' }: StatementDownloa
     <div className={`relative ${className}`}>
       <button 
         onClick={() => setIsOpen(!isOpen)}
-        className="btn-ghost flex items-center gap-2 border-white/10 hover:bg-white/5"
+        className="btn-ghost flex items-center gap-2 border-[color:var(--border-color)] hover:bg-white/5"
       >
         <Download size={16} className="text-brand-400" />
         <span className="text-sm font-medium">Statements</span>
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 top-full mt-2 w-64 glass-card p-3 z-50 shadow-xl border border-white/10">
-          <div className="text-xs font-semibold text-white/50 uppercase tracking-wider mb-2 px-2">Download PDF</div>
+        <div className="absolute right-0 top-full mt-2 w-64 glass-card p-3 z-50 shadow-xl border border-[color:var(--border-color)]">
+          <div className="text-xs font-semibold text-[color:var(--text-secondary)] uppercase tracking-wider mb-2 px-2">Download PDF</div>
           
           <div className="space-y-1">
             <button 
@@ -155,10 +155,10 @@ export default function StatementDownloader({ className = '' }: StatementDownloa
               disabled={isGenerating}
               className="w-full text-left flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/5 transition-colors disabled:opacity-50"
             >
-              <CalendarDays size={16} className="text-indigo-400" />
+              <CalendarDays size={16} className="text-brand-400" />
               <div>
-                <div className="text-sm font-medium text-white">Monthly Report</div>
-                <div className="text-[10px] text-white/40">Whole Household</div>
+                <div className="text-sm font-medium text-[color:var(--text-primary)]">Monthly Report</div>
+                <div className="text-[10px] text-[color:var(--text-muted)]">Whole Household</div>
               </div>
             </button>
 
@@ -169,22 +169,22 @@ export default function StatementDownloader({ className = '' }: StatementDownloa
             >
               <FileText size={16} className="text-emerald-400" />
               <div>
-                <div className="text-sm font-medium text-white">Weekly Report</div>
-                <div className="text-[10px] text-white/40">Whole Household</div>
+                <div className="text-sm font-medium text-[color:var(--text-primary)]">Weekly Report</div>
+                <div className="text-[10px] text-[color:var(--text-muted)]">Whole Household</div>
               </div>
             </button>
 
-            <div className="h-px w-full bg-white/5 my-2" />
+            <div className="h-px w-full bg-[var(--surface-2)] my-2" />
 
             <button 
               onClick={() => generatePDF('monthly', 'individual')}
               disabled={isGenerating}
               className="w-full text-left flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/5 transition-colors disabled:opacity-50"
             >
-              <CalendarDays size={16} className="text-indigo-400" />
+              <CalendarDays size={16} className="text-brand-400" />
               <div>
-                <div className="text-sm font-medium text-white">My Monthly Report</div>
-                <div className="text-[10px] text-white/40">Personal Expenses Only</div>
+                <div className="text-sm font-medium text-[color:var(--text-primary)]">My Monthly Report</div>
+                <div className="text-[10px] text-[color:var(--text-muted)]">Personal Expenses Only</div>
               </div>
             </button>
           </div>

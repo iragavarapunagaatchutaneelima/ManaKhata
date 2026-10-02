@@ -7,8 +7,9 @@ import { formatCurrency } from '@/hooks/useUtils'
 import type { HouseholdAnalytics, PersonalAnalytics } from '@/types'
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell, RadarChart, Radar, PolarGrid, PolarAngleAxis, CartesianGrid } from 'recharts'
 import { useAuthStore } from '@/store/authStore'
+import { CHART_PALETTE } from '@/constants/theme'
 
-const COLORS = ['#6366f1','#f59e0b','#10b981','#f43f5e','#06b6d4','#7c3aed','#84cc16','#ec4899','#f97316']
+const COLORS = CHART_PALETTE
 
 export default function AnalyticsPage() {
   const { user } = useAuthStore()
@@ -93,8 +94,8 @@ export default function AnalyticsPage() {
             <AreaChart data={trendData || []}>
               <defs>
                 <linearGradient id="grad1" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#6366f1" stopOpacity={0.35} />
-                  <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
+                  <stop offset="5%" stopColor="var(--accent)" stopOpacity={0.35} />
+                  <stop offset="95%" stopColor="var(--accent)" stopOpacity={0} />
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.08)" />
@@ -102,9 +103,9 @@ export default function AnalyticsPage() {
               <YAxis tick={{ fontSize: 11, fill: 'var(--text-muted)' }} axisLine={false} tickLine={false}
                 tickFormatter={(v: number) => `₹${(v/1000).toFixed(0)}k`} />
               <Tooltip formatter={(v: any) => [formatCurrency(Number(v)), 'Spent']} contentStyle={tooltipStyle} />
-              <Area type="monotone" dataKey="total" stroke="#6366f1" strokeWidth={2.5} fill="url(#grad1)"
-                dot={{ r: 5, fill: '#6366f1', strokeWidth: 2, stroke: 'white' }}
-                activeDot={{ r: 7, fill: '#6366f1' }} />
+              <Area type="monotone" dataKey="total" stroke="var(--accent)" strokeWidth={2.5} fill="url(#grad1)"
+                dot={{ r: 5, fill: 'var(--accent)', strokeWidth: 2, stroke: 'white' }}
+                activeDot={{ r: 7, fill: 'var(--accent)' }} />
             </AreaChart>
           </ResponsiveContainer>
         )}
@@ -157,7 +158,7 @@ export default function AnalyticsPage() {
                 <XAxis dataKey="name" tick={{ fontSize: 12, fill: 'var(--text-muted)' }} axisLine={false} tickLine={false} />
                 <YAxis hide />
                 <Tooltip formatter={(v: any) => formatCurrency(Number(v))} contentStyle={tooltipStyle} />
-                <Bar dataKey="spent" fill="#6366f1" radius={[6,6,0,0]} />
+                <Bar dataKey="spent" fill="var(--accent)" radius={[6,6,0,0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>

@@ -92,7 +92,7 @@ export default function ExpensesPage() {
               <YAxis hide />
               <Tooltip formatter={(v: any) => formatCurrency(Number(v))}
                 contentStyle={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '12px', color: 'var(--text-primary)' }} />
-              <Bar dataKey="amount" fill="#6366f1" radius={[6,6,0,0]} />
+              <Bar dataKey="amount" fill="var(--accent)" radius={[6,6,0,0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>

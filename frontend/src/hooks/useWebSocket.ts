@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { Client } from '@stomp/stompjs';
 import { useAuthStore } from '@/store/authStore';
+import { DEMO_MODE } from '@/lib/api';
+
+const WS_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080').replace(/^http/, 'ws') + '/ws';
 
 export function useWebSocket() {
   const clientRef = useRef<Client | null>(null);
@@ -13,10 +16,11 @@ export function useWebSocket() {
 
   useEffect(() => {
     const token = typeof window !== 'undefined' ? localStorage.getItem('mk_token') : null;
-    if (!userId || !token) return;
+    if (DEMO_MODE || !userId || !token) return;
+    if (token.startsWith('demo-token-')) return;
 
     const client = new Client({
-      brokerURL: 'ws://localhost:8080/ws',
+      brokerURL: WS_URL,
       connectHeaders: {
         Authorization: `Bearer ${token}`
       },

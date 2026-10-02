@@ -36,7 +36,7 @@ export default function BudgetMeter({ budgets, loading }: BudgetMeterProps) {
           const pct = Math.min(100, (budget.currentSpent / budget.monthlyLimit) * 100)
           const overBudget = pct >= 100
           const nearLimit = pct >= budget.alertAtPercent
-          const barColor = overBudget ? '#f43f5e' : nearLimit ? '#f59e0b' : '#10b981'
+          const barColor = overBudget ? 'var(--negative)' : nearLimit ? 'var(--warning)' : 'var(--positive)'
 
           return (
             <motion.div

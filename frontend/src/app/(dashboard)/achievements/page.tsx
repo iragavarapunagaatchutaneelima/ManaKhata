@@ -68,7 +68,7 @@ export default function AchievementsPage() {
             className="glass-card p-6 border border-brand-500/20 flex flex-col items-center text-center relative overflow-hidden group"
           >
             <div className="absolute inset-0 bg-brand-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-            <div className="w-16 h-16 rounded-full bg-black/40 flex items-center justify-center mb-4 shadow-glow-brand relative z-10">
+            <div className="w-16 h-16 rounded-full bg-[var(--surface-2)] flex items-center justify-center mb-4 shadow-glow-brand relative z-10">
               {getIcon(badge.icon)}
             </div>
             <h3 className="font-bold text-sm mb-1 relative z-10" style={{ color: 'var(--text-primary)' }}>{badge.name}</h3>
@@ -78,8 +78,8 @@ export default function AchievementsPage() {
       </div>
 
       {badges.length === 0 && (
-        <div className="text-center py-12 glass-card rounded-2xl border border-white/5">
-          <Award size={48} className="mx-auto mb-4 text-white/20" />
+        <div className="text-center py-12 glass-card rounded-2xl border border-[color:var(--border-color)]">
+          <Award size={48} className="mx-auto mb-4 text-[color:var(--text-muted)]" />
           <h3 className="text-lg font-medium" style={{ color: 'var(--text-primary)' }}>No badges yet</h3>
           <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>Complete goals and chores to earn badges!</p>
         </div>

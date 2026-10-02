@@ -59,7 +59,7 @@ export default function IntegrationsPage() {
 
             <div className="mt-6 space-y-4">
               <div className="flex items-center gap-3 text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
-                <span className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center text-xs">1</span>
+                <span className="w-6 h-6 rounded-full bg-[var(--surface-2)] flex items-center justify-center text-xs">1</span>
                 Generate your secure linking token
               </div>
               
@@ -73,21 +73,21 @@ export default function IntegrationsPage() {
                 </button>
               ) : (
                 <div className="ml-9 flex items-center gap-2">
-                  <div className="px-4 py-2 rounded-lg font-mono text-sm bg-black/40 border border-white/10 text-emerald-400">
+                  <div className="px-4 py-2 rounded-lg font-mono text-sm bg-[var(--surface-2)] border border-[color:var(--border-color)] text-emerald-400">
                     {token}
                   </div>
-                  <button onClick={copyToken} className="p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors">
+                  <button onClick={copyToken} className="p-2 rounded-lg bg-[var(--surface-2)] hover:bg-white/10 transition-colors">
                     {copied ? <CheckCircle2 size={16} className="text-emerald-400" /> : <Copy size={16} style={{ color: 'var(--text-muted)' }} />}
                   </button>
                 </div>
               )}
 
               <div className="flex items-center gap-3 text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
-                <span className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center text-xs">2</span>
+                <span className="w-6 h-6 rounded-full bg-[var(--surface-2)] flex items-center justify-center text-xs">2</span>
                 Message the bot
               </div>
               <div className="ml-9 text-sm" style={{ color: 'var(--text-muted)' }}>
-                Send the token to <strong className="text-white">+91 98765 43210</strong> on WhatsApp to link your device.
+                Send the token to <strong className="text-[color:var(--text-primary)]">+91 98765 43210</strong> on WhatsApp to link your device.
                 <a href="#" className="flex items-center gap-1 text-brand-400 hover:text-brand-300 mt-2 font-medium">
                   Open WhatsApp <ArrowRight size={14} />
                 </a>
@@ -110,7 +110,7 @@ export default function IntegrationsPage() {
               Similar to WhatsApp, but for Telegram. Currently in development and rolling out in Phase 2.
             </p>
             <div className="mt-3">
-              <span className="text-[10px] uppercase tracking-wider font-bold px-2 py-1 rounded bg-white/5 text-white/40">Coming Soon</span>
+              <span className="text-[10px] uppercase tracking-wider font-bold px-2 py-1 rounded bg-[var(--surface-2)] text-[color:var(--text-muted)]">Coming Soon</span>
             </div>
           </div>
         </div>

@@ -237,12 +237,12 @@ export default function ChatPage() {
   const channelMessages = messages.filter(m => m.channel === activeChannel)
 
   return (
-    <div className="max-w-6xl mx-auto h-[600px] flex rounded-2xl border border-white/5 overflow-hidden glass-card">
+    <div className="max-w-6xl mx-auto h-[600px] flex rounded-2xl border border-[color:var(--border-color)] overflow-hidden glass-card">
       {/* Channels Sidebar */}
-      <div className="w-64 border-r border-white/5 flex flex-col justify-between" style={{ background: 'var(--bg-secondary)' }}>
+      <div className="w-64 border-r border-[color:var(--border-color)] flex flex-col justify-between" style={{ background: 'var(--bg-secondary)' }}>
         <div className="p-4 space-y-4">
           <div className="flex items-center gap-1.5 px-2">
-            <Sparkles size={16} className="text-indigo-400" />
+            <Sparkles size={16} className="text-brand-400" />
             <h3 className="font-display font-bold text-sm" style={{ color: 'var(--text-primary)' }}>Family Channels</h3>
           </div>
 
@@ -258,7 +258,7 @@ export default function ChatPage() {
                   }}
                   className={`w-full flex items-center gap-2 p-2.5 rounded-xl text-left transition-all ${
                     isActive 
-                      ? 'bg-indigo-500/10 border border-indigo-500/20 shadow-glow-brand text-indigo-400 font-semibold' 
+                      ? 'bg-brand-500/10 border border-brand-500/20 shadow-glow-brand text-brand-400 font-semibold' 
                       : 'hover:bg-white/4 text-muted-foreground'
                   }`}
                   style={{ color: isActive ? 'var(--text-primary)' : 'var(--text-muted)' }}
@@ -277,7 +277,7 @@ export default function ChatPage() {
         </div>
 
         {/* Member list footer card */}
-        <div className="p-4 border-t border-white/5 space-y-3" style={{ background: 'var(--bg-primary)' }}>
+        <div className="p-4 border-t border-[color:var(--border-color)] space-y-3" style={{ background: 'var(--bg-primary)' }}>
           <span className="text-[10px] uppercase font-semibold tracking-wider flex items-center gap-1" style={{ color: 'var(--text-muted)' }}>
             <Users size={12} /> Active Household ({4} online)
           </span>
@@ -301,9 +301,9 @@ export default function ChatPage() {
       </div>
 
       {/* Message Chat Room */}
-      <div className="flex-1 flex flex-col justify-between bg-black/10">
+      <div className="flex-1 flex flex-col justify-between bg-[var(--surface-2)]">
         {/* Channel Header */}
-        <div className="p-4 border-b border-white/5 flex items-center justify-between" style={{ background: 'var(--bg-secondary)' }}>
+        <div className="p-4 border-b border-[color:var(--border-color)] flex items-center justify-between" style={{ background: 'var(--bg-secondary)' }}>
           <div>
             <div className="flex items-center gap-1">
               <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
@@ -329,7 +329,7 @@ export default function ChatPage() {
           {channelMessages.map(msg => {
             const isSelf = msg.senderEmail.toLowerCase() === user?.email?.toLowerCase()
             const roleBadges: Record<string, string> = {
-              HOUSEHEAD: 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20',
+              HOUSEHEAD: 'bg-brand-500/10 text-brand-400 border border-brand-500/20',
               PARENT: 'bg-amber-500/10 text-amber-400 border border-amber-500/20',
               ADULT_CHILD: 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20',
               GRANDPARENT: 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
@@ -341,7 +341,7 @@ export default function ChatPage() {
                 className={`flex gap-3 max-w-[85%] ${isSelf ? 'ml-auto flex-row-reverse' : ''}`}
               >
                 {/* Avatar Icon */}
-                <div className="w-8 h-8 rounded-xl flex items-center justify-center text-white font-bold text-xs bg-indigo-600/30 border border-indigo-500/20 shrink-0">
+                <div className="w-8 h-8 rounded-xl flex items-center justify-center gradient-brand font-bold text-xs shrink-0">
                   {msg.senderName.charAt(0)}
                 </div>
 
@@ -360,8 +360,8 @@ export default function ChatPage() {
                   <div 
                     className={`p-3 rounded-2xl text-xs leading-relaxed ${
                       isSelf 
-                        ? 'bg-indigo-600/20 border border-indigo-500/30 text-white rounded-tr-none' 
-                        : 'bg-white/4 border border-white/5 rounded-tl-none'
+                        ? 'bg-[var(--accent-soft)] border border-[color:var(--border-color)] text-[color:var(--text-primary)] rounded-tr-none' 
+                        : 'bg-[var(--surface-2)] border border-[color:var(--border-color)] rounded-tl-none'
                     }`}
                     style={{ color: isSelf ? '#ffffff' : 'var(--text-secondary)' }}
                   >
@@ -381,14 +381,14 @@ export default function ChatPage() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 5 }}
               >
-                <div className="w-8 h-8 rounded-xl flex items-center justify-center text-white font-bold text-xs bg-indigo-600/30 border border-indigo-500/20 shrink-0 animate-pulse">
+                <div className="w-8 h-8 rounded-xl flex items-center justify-center gradient-brand font-bold text-xs shrink-0 animate-pulse">
                   {typingUser.charAt(0)}
                 </div>
                 <div className="space-y-1">
                   <span className="text-[10px] font-semibold" style={{ color: 'var(--text-muted)' }}>
                     {typingUser} is typing...
                   </span>
-                  <div className="p-3 rounded-2xl bg-white/4 border border-white/5 rounded-tl-none flex gap-1 items-center h-8">
+                  <div className="p-3 rounded-2xl bg-[var(--surface-2)] border border-[color:var(--border-color)] rounded-tl-none flex gap-1 items-center h-8">
                     <span className="w-1.5 h-1.5 rounded-full bg-white/40 animate-bounce" />
                     <span className="w-1.5 h-1.5 rounded-full bg-white/40 animate-bounce delay-100" style={{ animationDelay: '0.2s' }} />
                     <span className="w-1.5 h-1.5 rounded-full bg-white/40 animate-bounce delay-200" style={{ animationDelay: '0.4s' }} />
@@ -403,7 +403,7 @@ export default function ChatPage() {
         {/* Message Input Box Form */}
         <form 
           onSubmit={handleSend}
-          className="p-4 border-t border-white/5 flex gap-2 items-center"
+          className="p-4 border-t border-[color:var(--border-color)] flex gap-2 items-center"
           style={{ background: 'var(--bg-secondary)' }}
         >
           {/* Mock extra buttons */}
@@ -430,7 +430,7 @@ export default function ChatPage() {
             value={inputText}
             onChange={e => setInputText(e.target.value)}
             placeholder={`Message #${currentChannel.name}...`}
-            className="flex-1 bg-black/40 border border-white/10 rounded-xl text-xs py-2 px-3 text-white outline-none focus:border-indigo-500/50 transition-colors"
+            className="flex-1 bg-[var(--surface-2)] border border-[color:var(--border-color)] rounded-xl text-xs py-2 px-3 text-[color:var(--text-primary)] outline-none focus:border-[color:var(--accent)] transition-colors"
           />
 
           <button 

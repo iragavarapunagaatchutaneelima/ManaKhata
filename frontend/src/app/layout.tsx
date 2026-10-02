@@ -1,9 +1,9 @@
 import type { Metadata, Viewport } from 'next'
-import { Inter, Outfit } from 'next/font/google'
+import { Inter, Fraunces } from 'next/font/google'
 import './globals.css'
 import { ThemeProvider } from '@/components/ThemeProvider'
 import { Toaster } from 'react-hot-toast'
-import InteractionAudio from '@/components/ui/InteractionAudio'
+import NativeBridge from '@/components/NativeBridge'
 
 const inter = Inter({
   subsets: ['latin'],
@@ -11,17 +11,23 @@ const inter = Inter({
   display: 'swap',
 })
 
-const outfit = Outfit({
+// Serif for headings: gives the plain "ledger book" feel without decoration.
+const fraunces = Fraunces({
   subsets: ['latin'],
-  variable: '--font-outfit',
+  variable: '--font-serif',
   display: 'swap',
-  weight: ['400', '500', '600', '700', '800', '900'],
+  weight: ['500', '600', '700'],
 })
 
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   maximumScale: 5,
+  viewportFit: 'cover',
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#f5f2ea' },
+    { media: '(prefers-color-scheme: dark)', color: '#141714' },
+  ],
 }
 
 export const metadata: Metadata = {
@@ -42,14 +48,14 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" suppressHydrationWarning data-scroll-behavior="smooth" className={`${inter.variable} ${outfit.variable}`}>
+    <html lang="en" suppressHydrationWarning data-scroll-behavior="smooth" className={`${inter.variable} ${fraunces.variable}`}>
       <body className="premium-surface antialiased">
         <ThemeProvider
           attribute="class"
-          defaultTheme="dark"
+          defaultTheme="light"
           enableSystem
         >
-          <InteractionAudio />
+          <NativeBridge />
           {children}
         </ThemeProvider>
         <Toaster
@@ -60,12 +66,12 @@ export default function RootLayout({
               background: 'var(--bg-secondary)',
               color: 'var(--text-primary)',
               border: '1px solid var(--border-color)',
-              borderRadius: '12px',
+              borderRadius: '10px',
               fontSize: '14px',
               fontWeight: '500',
             },
-            success: { iconTheme: { primary: '#10b981', secondary: 'white' } },
-            error:   { iconTheme: { primary: '#f43f5e', secondary: 'white' } },
+            success: { iconTheme: { primary: '#1f7a57', secondary: 'white' } },
+            error:   { iconTheme: { primary: '#b3261e', secondary: 'white' } },
           }}
         />
       </body>

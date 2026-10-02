@@ -102,7 +102,7 @@ export default function VehiclesPage() {
               </select>
             </div>
             <div className="flex items-center gap-2 col-span-full">
-              <input id="v-shared" type="checkbox" checked={form.isShared} onChange={e => setForm(f => ({...f, isShared: e.target.checked}))} className="w-4 h-4 accent-indigo-500" />
+              <input id="v-shared" type="checkbox" checked={form.isShared} onChange={e => setForm(f => ({...f, isShared: e.target.checked}))} className="w-4 h-4 accent-brand-500" />
               <label htmlFor="v-shared" className="text-sm" style={{ color: 'var(--text-secondary)' }}>Shared with household</label>
             </div>
           </div>

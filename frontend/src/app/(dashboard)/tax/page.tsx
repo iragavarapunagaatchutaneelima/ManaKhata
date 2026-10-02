@@ -131,7 +131,7 @@ export default function TaxPage() {
                 <h2 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>FY {fy}</h2>
                 <span className="text-sm font-semibold text-emerald-400">Total: {formatCurrency(totalAmount)}</span>
               </div>
-              <div className="glass-card divide-y divide-white/5 overflow-hidden border border-white/5">
+              <div className="glass-card divide-y divide-white/5 overflow-hidden border border-[color:var(--border-color)]">
                 {fyDocs.map(doc => (
                   <div key={doc.id} className="p-4 flex items-center justify-between hover:bg-white/[0.02]">
                     <div className="flex items-center gap-4">
@@ -147,7 +147,7 @@ export default function TaxPage() {
                     </div>
                     <div className="text-right">
                       <div className="font-bold text-lg" style={{ color: 'var(--text-primary)' }}>{formatCurrency(doc.amount)}</div>
-                      <div className="text-xs font-semibold px-2 py-0.5 rounded bg-white/5 inline-block mt-1" style={{ color: 'var(--text-muted)' }}>{doc.category}</div>
+                      <div className="text-xs font-semibold px-2 py-0.5 rounded bg-[var(--surface-2)] inline-block mt-1" style={{ color: 'var(--text-muted)' }}>{doc.category}</div>
                     </div>
                   </div>
                 ))}

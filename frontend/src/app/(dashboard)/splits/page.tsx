@@ -68,7 +68,7 @@ export default function SplitsPage() {
         <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 text-white font-bold text-sm ${
           type === 'owe' ? 'bg-rose-500/20 text-rose-500' :
           type === 'owed' ? 'bg-emerald-500/20 text-emerald-500' :
-          'bg-slate-500/20 text-slate-500'
+          'bg-slate-500/20 text-[color:var(--text-secondary)]'
         }`}>
           {otherPerson.fullName.charAt(0)}
         </div>
@@ -80,7 +80,7 @@ export default function SplitsPage() {
               {otherPerson.fullName}
               {!isOwe ? ' owes you' : ''}
             </span>
-            <span className="text-[10px] px-1.5 py-0.5 rounded bg-white/5 text-white/50">
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--surface-2)] text-[color:var(--text-secondary)]">
               {formatDate(split.createdAt)}
             </span>
           </div>
@@ -93,7 +93,7 @@ export default function SplitsPage() {
           <div className={`font-display font-bold ${
             type === 'owe' ? 'text-rose-400' :
             type === 'owed' ? 'text-emerald-400' :
-            'text-slate-400'
+            'text-[color:var(--text-secondary)]'
           }`}>
             {formatCurrency(split.amount)}
           </div>

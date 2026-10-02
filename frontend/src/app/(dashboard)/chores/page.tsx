@@ -184,7 +184,7 @@ export default function ChoresPage() {
 
         {chores.length === 0 && !loading && (
           <div className="text-center py-12 glass-card rounded-2xl">
-            <CheckSquare size={48} className="mx-auto mb-4 text-white/20" />
+            <CheckSquare size={48} className="mx-auto mb-4 text-[color:var(--text-muted)]" />
             <h3 className="text-lg font-medium" style={{ color: 'var(--text-primary)' }}>No chores assigned</h3>
             <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>
               {isParent ? "Assign some tasks and reward your kids!" : "You don't have any tasks pending."}

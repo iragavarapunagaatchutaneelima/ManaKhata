@@ -43,6 +43,13 @@ const navItems = [
   { href: '/settings',        icon: Settings,        label: 'Settings',       group: 'account' },
 ]
 
+const bottomNavItems = [
+  { href: '/dashboard', icon: LayoutDashboard, label: 'Home' },
+  { href: '/expenses',  icon: Receipt,         label: 'Expenses' },
+  { href: '/wallet',    icon: Wallet,          label: 'Wallet' },
+  { href: '/grocery',   icon: ShoppingCart,    label: 'Grocery' },
+]
+
 const groupLabels: Record<string, string> = {
   main: 'Overview',
   finance: 'Finance',
@@ -53,9 +60,10 @@ const groupLabels: Record<string, string> = {
 }
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const { user, isAuthenticated, logout } = useAuthStore()
+  const { user, isAuthenticated, hasHydrated, logout } = useAuthStore()
   const router = useRouter()
-  const pathname = usePathname()
+  // The Android build uses trailing-slash URLs (/dashboard/); compare without it.
+  const pathname = (usePathname() || '/').replace(/(.)\/$/, '$1')
   const [collapsed, setCollapsed] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
   const { theme, setTheme, systemTheme } = useTheme()
@@ -69,9 +77,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     setMounted(true)
   }, [])
 
+  // Wait for the persisted session to load from localStorage before deciding the
+  // user is signed out; otherwise every refresh or deep link bounces to /auth/login.
   useEffect(() => {
-    if (!isAuthenticated || !user) router.replace('/auth/login')
-  }, [isAuthenticated, user, router])
+    if (hasHydrated && (!isAuthenticated || !user)) router.replace('/auth/login')
+  }, [hasHydrated, isAuthenticated, user, router])
 
   const handleLogout = () => {
     logout()
@@ -157,10 +167,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   )
 
   return (
-    <div className="premium-app-shell flex h-screen overflow-hidden text-slate-100">
-      <div className="liquid-blob left-[-8rem] top-[8rem] bg-sky-400/35" />
-      <div className="liquid-blob right-[-10rem] top-[-6rem] bg-blue-600/30" />
-      <div className="liquid-blob bottom-[-10rem] left-[45%] bg-cyan-900/35" />
+    <div className="premium-app-shell flex h-screen overflow-hidden text-[color:var(--text-primary)]">
       {/* Desktop Sidebar */}
       <aside
         className="sidebar premium-sidebar hidden lg:flex flex-col h-full relative z-20 transition-all duration-300"
@@ -265,10 +272,28 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
         </header>
 
-        {/* Page Content */}
-        <main className="flex-1 overflow-auto p-4 md:p-6 page-enter">
+        {/* Page Content (extra bottom padding on phones for the tab bar) */}
+        <main className="flex-1 overflow-auto p-4 pb-24 md:p-6 lg:pb-6 page-enter">
           {children}
         </main>
+
+        {/* Bottom tab bar: phones and the Android app */}
+        <nav className="bottom-nav lg:hidden fixed bottom-0 inset-x-0 z-20 flex" aria-label="Primary">
+          {bottomNavItems.map(item => {
+            const Icon = item.icon
+            const isActive = pathname === item.href
+            return (
+              <Link key={item.href} href={item.href} className={`bottom-nav-item ${isActive ? 'active' : ''}`}>
+                <Icon size={20} />
+                <span>{item.label}</span>
+              </Link>
+            )
+          })}
+          <button type="button" className="bottom-nav-item" onClick={() => setMobileOpen(true)}>
+            <Menu size={20} />
+            <span>More</span>
+          </button>
+        </nav>
       </div>
 
       {/* Floating Calculator */}

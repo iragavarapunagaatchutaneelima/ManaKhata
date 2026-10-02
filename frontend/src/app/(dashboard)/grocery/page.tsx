@@ -171,7 +171,7 @@ export default function GroceryListPage() {
       {lists.length > 0 && (
         <div className="grid grid-cols-3 gap-3">
           {[
-            { label: 'Active Lists', value: lists.filter(l => !l.isCompleted).length, icon: '📋', color: 'text-indigo-400' },
+            { label: 'Active Lists', value: lists.filter(l => !l.isCompleted).length, icon: '📋', color: 'text-brand-400' },
             { label: 'Total Items', value: lists.reduce((a, l) => a + l.items.length, 0), icon: '📦', color: 'text-emerald-400' },
             { label: 'Est. Budget', value: formatCurrency(lists.reduce((a, l) => a + getListTotal(l), 0)), icon: '💰', color: 'text-amber-400' },
           ].map(stat => (
@@ -212,7 +212,7 @@ export default function GroceryListPage() {
               >
                 <div className="flex items-center gap-3 min-w-0">
                   <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-xl flex-shrink-0 ${
-                    list.isCompleted ? 'bg-emerald-500/10' : 'bg-indigo-500/10'
+                    list.isCompleted ? 'bg-emerald-500/10' : 'bg-brand-500/10'
                   }`}>
                     {list.isCompleted ? '✅' : '🛒'}
                   </div>
@@ -222,7 +222,7 @@ export default function GroceryListPage() {
                       {list.items.length} items · by {list.createdBy.fullName} · est. {formatCurrency(total)}
                     </div>
                     {/* Progress bar */}
-                    <div className="mt-1.5 h-1.5 rounded-full bg-white/5 w-40">
+                    <div className="mt-1.5 h-1.5 rounded-full bg-[var(--surface-2)] w-40">
                       <div
                         className="h-full rounded-full transition-all duration-500"
                         style={{ width: `${progress}%`, background: progress === 100 ? '#10b981' : '#6366f1' }}
@@ -283,7 +283,7 @@ export default function GroceryListPage() {
                               </span>
                             )}
                             {item.category && (
-                              <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded-full bg-white/5 text-white/40">{item.category}</span>
+                              <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded-full bg-[var(--surface-2)] text-[color:var(--text-muted)]">{item.category}</span>
                             )}
                           </div>
                           {item.estimatedPrice && (

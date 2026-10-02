@@ -3,6 +3,10 @@ import type { ApiResponse } from '@/types'
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
 const DEMO_PASSWORD = 'Demo@1234'
+// Hosted demo (Vercel) and the offline Android build set this so the app never
+// tries to reach an API server. Locally it is unset and demo accounts sign in
+// against the real backend, falling back to demo data only if it is unreachable.
+export const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE === 'true'
 
 const demoUsers = [
   { userId: 1, fullName: 'Mario', email: 'demo@manaKhata.app', role: 'HOUSEHEAD', isHousehead: true, walletBalance: 45000 },
@@ -73,17 +77,22 @@ function demoResponse<T>(data: T, message = 'Demo data loaded'): ApiResponse<T> 
 }
 
 function shouldUseDemo(error: any) {
-  // Fall back to demo data for: network errors, 401 Unauthorized (expired/invalid JWT), 403 Forbidden
+  // Demo builds and demo sessions never reach the API.
+  if (error?.code === 'ERR_DEMO_MODE') return true
+  // API unreachable (backend not started): let the UI stay explorable with demo data.
   if (!error?.response || error.code === 'ERR_NETWORK' || error.message === 'Network Error') return true
-  if (error.response?.status === 401 || error.response?.status === 403) {
-    // Clear stale tokens silently so next real login works
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('mk_token')
-      localStorage.removeItem('mk_refresh')
-    }
-    return true
-  }
+  // A real API answered with an error: surface it instead of showing made-up numbers.
   return false
+}
+
+function endSession() {
+  if (typeof window === 'undefined') return
+  localStorage.removeItem('mk_token')
+  localStorage.removeItem('mk_refresh')
+  localStorage.removeItem('mk_auth_v2')
+  // Runs inside an axios interceptor (no router here); a full reload also clears in-memory store state.
+  // eslint-disable-next-line @next/next/no-location-assign-relative-destination
+  if (!window.location.pathname.startsWith('/auth')) window.location.href = '/auth/login'
 }
 
 class ApiClient {
@@ -100,23 +109,52 @@ class ApiClient {
       (config) => {
         if (typeof window !== 'undefined') {
           const token = localStorage.getItem('mk_token')
+          if (DEMO_MODE || token?.startsWith('demo-token-')) {
+            return Promise.reject({ code: 'ERR_DEMO_MODE', message: 'Demo mode uses local data' })
+          }
           if (token) config.headers.Authorization = `Bearer ${token}`
         }
         return config
       },
       (error) => Promise.reject(error)
     )
+
+    // Expired or invalid JWT on a protected route: sign out instead of faking data.
+    this.instance.interceptors.response.use(
+      (response) => response,
+      (error) => {
+        const url: string = error?.config?.url || ''
+        if (error?.response?.status === 401 && !url.startsWith('/api/auth/')) endSession()
+        return Promise.reject(error)
+      }
+    )
   }
 
   async login(email: string, password: string) {
+    const demoUser = demoUsers.find((user) => user.email.toLowerCase() === email.toLowerCase())
+    if (DEMO_MODE) {
+      if (!demoUser || password !== DEMO_PASSWORD) {
+        throw new Error('This is the demo build. Use one of the quick demo accounts (password Demo@1234).')
+      }
+      return demoResponse({
+        ...demoUser,
+        householdId: 1,
+        householdName: 'Mario Family',
+        inviteCode: 'MARIO01',
+        token: `demo-token-${demoUser.userId}`,
+        refreshToken: `demo-refresh-${demoUser.userId}`,
+      }, 'Signed in with hosted demo data')
+    }
+
     try {
       const res: AxiosResponse<ApiResponse<any>> = await this.instance.post('/api/auth/login', { email, password })
       return res.data
     } catch (error: any) {
-      if (!shouldUseDemo(error)) throw error
-      const demoUser = demoUsers.find((user) => user.email.toLowerCase() === email.toLowerCase())
+      if (!shouldUseDemo(error)) {
+        throw new Error(error?.response?.data?.message || 'Invalid email or password.')
+      }
       if (!demoUser || password !== DEMO_PASSWORD) {
-        throw new Error('Invalid demo credentials. Use one of the quick demo accounts.')
+        throw new Error('Server is offline. Only the demo accounts (password Demo@1234) work right now.')
       }
       return demoResponse({
         ...demoUser,

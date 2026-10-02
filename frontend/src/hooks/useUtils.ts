@@ -81,13 +81,19 @@ export function formatDate(dateStr: string): string {
   return new Intl.DateTimeFormat('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date(dateStr))
 }
 
-export function formatCurrency(amount: number, currencyCode: string = 'INR'): string {
-  return new Intl.NumberFormat('en-IN', {
-    style: 'currency',
-    currency: currencyCode,
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount)
+export function formatCurrency(amount: number, currencyCode?: string | null): string {
+  const value = Number.isFinite(Number(amount)) ? Number(amount) : 0
+  try {
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: currencyCode || 'INR',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(value)
+  } catch {
+    // Unknown/invalid ISO code from the API must not crash the page.
+    return `${currencyCode ?? ''} ${value.toLocaleString('en-IN')}`.trim()
+  }
 }
 
 export function getMonthName(month: number): string {

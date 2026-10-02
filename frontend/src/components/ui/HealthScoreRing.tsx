@@ -9,14 +9,14 @@ interface HealthScoreRingProps {
 }
 
 const getScoreColor = (score: number) => {
-  if (score >= 85) return '#10b981'
-  if (score >= 70) return '#6366f1'
-  if (score >= 55) return '#f59e0b'
-  return '#f43f5e'
+  if (score >= 85) return '#1f7a57'
+  if (score >= 70) return '#3d6e9e'
+  if (score >= 55) return '#b7832a'
+  return '#b3261e'
 }
 
 const gradeColors: Record<string, string> = {
-  A: '#10b981', B: '#6366f1', C: '#f59e0b', D: '#fb7185', F: '#f43f5e'
+  A: '#1f7a57', B: '#3d6e9e', C: '#b7832a', D: '#c0614f', F: '#b3261e'
 }
 
 export default function HealthScoreRing({ score, loading }: HealthScoreRingProps) {
@@ -24,7 +24,7 @@ export default function HealthScoreRing({ score, loading }: HealthScoreRingProps
   const circumference = 2 * Math.PI * r
   const progress = score ? (score.score / 100) * circumference : 0
   const dashOffset = circumference - progress
-  const color = score ? getScoreColor(score.score) : '#6366f1'
+  const color = score ? getScoreColor(score.score) : '#3d6e9e'
 
   if (loading) {
     return (

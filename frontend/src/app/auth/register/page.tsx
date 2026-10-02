@@ -60,17 +60,11 @@ export default function RegisterPage() {
     }
   }
 
-  const inputClass = "input-field" + " [&]:bg-white/6 [&]:border-white/10 [&]:text-white [&::placeholder]:text-white/30"
+  const inputClass = "input-field" + ""
 
   return (
     <div className="premium-app-shell min-h-screen flex items-center justify-center p-6">
       {/* Background glows */}
-      <div className="fixed inset-0 pointer-events-none">
-        <div className="liquid-blob left-[-8rem] top-[8rem] bg-sky-400/32" />
-        <div className="liquid-blob right-[-9rem] bottom-[-8rem] bg-blue-700/28" />
-        <div className="absolute top-0 right-1/4 w-80 h-80 bg-blue-600/14 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 left-1/4 w-64 h-64 bg-cyan-700/10 rounded-full blur-3xl" />
-      </div>
 
       <motion.div
         className="w-full max-w-lg relative z-10"
@@ -80,66 +74,66 @@ export default function RegisterPage() {
         {/* Logo */}
         <div className="flex items-center gap-2 mb-8 justify-center">
           <div className="premium-logo w-9 h-9 rounded-xl flex items-center justify-center font-bold text-lg text-white">M</div>
-          <span className="font-display font-bold text-xl text-white">ManaKhata</span>
+          <span className="font-display font-bold text-xl text-[color:var(--text-primary)]">ManaKhata</span>
         </div>
 
         {/* Progress */}
         <div className="flex items-center gap-2 mb-6">
           {[1, 2, 3].map(s => (
-            <div key={s} className={`h-1.5 flex-1 rounded-full transition-all duration-500 ${s <= step ? 'gradient-brand' : 'bg-white/10'}`} />
+            <div key={s} className={`h-1.5 flex-1 rounded-full transition-all duration-500 ${s <= step ? 'gradient-brand' : 'bg-[var(--surface-2)]'}`} />
           ))}
         </div>
 
-        <div className="glass-card p-8" style={{ background: 'rgba(255,255,255,0.04)', borderColor: 'rgba(255,255,255,0.08)' }}>
+        <div className="glass-card p-8">
           {/* Step 1: Personal Info */}
           {step === 1 && (
             <motion.div key="step1" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
-              <h1 className="font-display font-bold text-2xl text-white mb-1">Create your account</h1>
-              <p className="text-white/40 text-sm mb-6">Step 1 of 3 — Personal information</p>
+              <h1 className="font-display font-bold text-2xl text-[color:var(--text-primary)] mb-1">Create your account</h1>
+              <p className="text-[color:var(--text-muted)] text-sm mb-6">Step 1 of 3 — Personal information</p>
 
               <div className="space-y-4">
                 <div>
-                  <label className="block text-white/60 text-sm font-medium mb-1.5">Full Name</label>
+                  <label className="block text-[color:var(--text-secondary)] text-sm font-medium mb-1.5">Full Name</label>
                   <div className="relative">
-                    <User size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/30" />
+                    <User size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[color:var(--text-muted)]" />
                     <input id="reg-name" type="text" value={form.fullName} onChange={e => update('fullName', e.target.value)}
-                      className="input-field pl-10" style={{ background: 'rgba(255,255,255,0.06)', borderColor: 'rgba(255,255,255,0.10)', color: 'white' }}
+                      className="input-field pl-10"
                       placeholder="Mario" />
                   </div>
                 </div>
                 <div>
-                  <label className="block text-white/60 text-sm font-medium mb-1.5">Email</label>
+                  <label className="block text-[color:var(--text-secondary)] text-sm font-medium mb-1.5">Email</label>
                   <div className="relative">
-                    <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/30" />
+                    <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[color:var(--text-muted)]" />
                     <input id="reg-email" type="email" value={form.email} onChange={e => update('email', e.target.value)}
-                      className="input-field pl-10" style={{ background: 'rgba(255,255,255,0.06)', borderColor: 'rgba(255,255,255,0.10)', color: 'white' }}
+                      className="input-field pl-10"
                       placeholder="you@example.com" />
                   </div>
                 </div>
                 <div>
-                  <label className="block text-white/60 text-sm font-medium mb-1.5">Phone (optional)</label>
+                  <label className="block text-[color:var(--text-secondary)] text-sm font-medium mb-1.5">Phone (optional)</label>
                   <div className="relative">
-                    <Phone size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/30" />
+                    <Phone size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[color:var(--text-muted)]" />
                     <input id="reg-phone" type="tel" value={form.phone} onChange={e => update('phone', e.target.value)}
-                      className="input-field pl-10" style={{ background: 'rgba(255,255,255,0.06)', borderColor: 'rgba(255,255,255,0.10)', color: 'white' }}
+                      className="input-field pl-10"
                       placeholder="+91 98765 43210" />
                   </div>
                 </div>
                 <div>
-                  <label className="block text-white/60 text-sm font-medium mb-1.5">Password</label>
+                  <label className="block text-[color:var(--text-secondary)] text-sm font-medium mb-1.5">Password</label>
                   <div className="relative">
-                    <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/30" />
+                    <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[color:var(--text-muted)]" />
                     <input id="reg-password" type="password" value={form.password} onChange={e => update('password', e.target.value)}
-                      className="input-field pl-10" style={{ background: 'rgba(255,255,255,0.06)', borderColor: 'rgba(255,255,255,0.10)', color: 'white' }}
+                      className="input-field pl-10"
                       placeholder="Min 8 characters" />
                   </div>
                 </div>
                 <div>
-                  <label className="block text-white/60 text-sm font-medium mb-1.5">Confirm Password</label>
+                  <label className="block text-[color:var(--text-secondary)] text-sm font-medium mb-1.5">Confirm Password</label>
                   <div className="relative">
-                    <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/30" />
+                    <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[color:var(--text-muted)]" />
                     <input id="reg-confirm" type="password" value={form.confirmPassword} onChange={e => update('confirmPassword', e.target.value)}
-                      className="input-field pl-10" style={{ background: 'rgba(255,255,255,0.06)', borderColor: 'rgba(255,255,255,0.10)', color: 'white' }}
+                      className="input-field pl-10"
                       placeholder="••••••••" />
                   </div>
                 </div>
@@ -155,8 +149,8 @@ export default function RegisterPage() {
           {/* Step 2: Role Selection */}
           {step === 2 && (
             <motion.div key="step2" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
-              <h1 className="font-display font-bold text-2xl text-white mb-1">Select your role</h1>
-              <p className="text-white/40 text-sm mb-6">Step 2 of 3 — Your role in the household</p>
+              <h1 className="font-display font-bold text-2xl text-[color:var(--text-primary)] mb-1">Select your role</h1>
+              <p className="text-[color:var(--text-muted)] text-sm mb-6">Step 2 of 3 — Your role in the household</p>
 
               <div className="grid grid-cols-2 gap-2 mb-6">
                 {roles.map(r => (
@@ -164,25 +158,25 @@ export default function RegisterPage() {
                     className={`p-4 rounded-xl border text-left transition-all duration-200 ${
                       form.role === r.value
                         ? 'border-brand-500 bg-brand-500/15'
-                        : 'border-white/8 bg-white/4 hover:bg-white/8 hover:border-white/15'
+                        : 'border-[color:var(--border-color)] bg-[var(--surface-2)] hover:bg-[var(--sidebar-hover)] hover:border-white/15'
                     }`}
                   >
                     <div className="text-2xl mb-1">{r.icon}</div>
-                    <div className="text-white font-semibold text-sm">{r.label}</div>
-                    <div className="text-white/40 text-xs mt-0.5">{r.desc}</div>
+                    <div className="text-[color:var(--text-primary)] font-semibold text-sm">{r.label}</div>
+                    <div className="text-[color:var(--text-muted)] text-xs mt-0.5">{r.desc}</div>
                   </button>
                 ))}
               </div>
 
               <div className="mb-4">
-                <label className="block text-white/60 text-sm font-medium mb-1.5">Monthly Income (optional)</label>
+                <label className="block text-[color:var(--text-secondary)] text-sm font-medium mb-1.5">Monthly Income (optional)</label>
                 <input id="reg-income" type="number" value={form.monthlyIncome} onChange={e => update('monthlyIncome', e.target.value)}
-                  className="input-field" style={{ background: 'rgba(255,255,255,0.06)', borderColor: 'rgba(255,255,255,0.10)', color: 'white' }}
+                  className="input-field"
                   placeholder="e.g. 50000" />
               </div>
 
               <div className="flex gap-3">
-                <button onClick={() => setStep(1)} className="btn-ghost text-white/50 border-white/10 flex-1">
+                <button onClick={() => setStep(1)} className="btn-ghost text-[color:var(--text-secondary)] border-[color:var(--border-color)] flex-1">
                   <ChevronLeft size={16} /> Back
                 </button>
                 <button id="step2-next" onClick={() => setStep(3)} className="btn-primary flex-1 py-3">
@@ -195,53 +189,53 @@ export default function RegisterPage() {
           {/* Step 3: Household */}
           {step === 3 && (
             <motion.div key="step3" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
-              <h1 className="font-display font-bold text-2xl text-white mb-1">Your Household</h1>
-              <p className="text-white/40 text-sm mb-6">Step 3 of 3 — Set up or join a household</p>
+              <h1 className="font-display font-bold text-2xl text-[color:var(--text-primary)] mb-1">Your Household</h1>
+              <p className="text-[color:var(--text-muted)] text-sm mb-6">Step 3 of 3 — Set up or join a household</p>
 
-              <div className="flex gap-2 mb-6 p-1 rounded-xl bg-white/5 border border-white/8">
+              <div className="flex gap-2 mb-6 p-1 rounded-xl bg-[var(--surface-2)] border border-[color:var(--border-color)]">
                 <button onClick={() => update('joinExisting', false)}
-                  className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${!form.joinExisting ? 'bg-brand-600 text-white shadow' : 'text-white/50'}`}>
+                  className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${!form.joinExisting ? 'bg-brand-600 text-white shadow' : 'text-[color:var(--text-secondary)]'}`}>
                   Create New
                 </button>
                 <button onClick={() => update('joinExisting', true)}
-                  className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${form.joinExisting ? 'bg-brand-600 text-white shadow' : 'text-white/50'}`}>
+                  className={`flex-1 py-2 rounded-lg text-sm font-medium transition-all ${form.joinExisting ? 'bg-brand-600 text-white shadow' : 'text-[color:var(--text-secondary)]'}`}>
                   Join Existing
                 </button>
               </div>
 
               {!form.joinExisting ? (
                 <div>
-                  <label className="block text-white/60 text-sm font-medium mb-1.5">Household Name</label>
+                  <label className="block text-[color:var(--text-secondary)] text-sm font-medium mb-1.5">Household Name</label>
                   <div className="relative">
-                    <Home size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/30" />
+                    <Home size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[color:var(--text-muted)]" />
                     <input id="reg-household-name" type="text" value={form.householdName} onChange={e => update('householdName', e.target.value)}
-                      className="input-field pl-10" style={{ background: 'rgba(255,255,255,0.06)', borderColor: 'rgba(255,255,255,0.10)', color: 'white' }}
+                      className="input-field pl-10"
                       placeholder="Mario Family" />
                   </div>
-                  <p className="text-white/30 text-xs mt-2">You'll be the Househead with full admin access.</p>
+                  <p className="text-[color:var(--text-muted)] text-xs mt-2">You'll be the Househead with full admin access.</p>
                 </div>
               ) : (
                 <div>
-                  <label className="block text-white/60 text-sm font-medium mb-1.5">Invite Code</label>
+                  <label className="block text-[color:var(--text-secondary)] text-sm font-medium mb-1.5">Invite Code</label>
                   <div className="relative">
-                    <Hash size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/30" />
+                    <Hash size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[color:var(--text-muted)]" />
                     <input id="reg-invite-code" type="text" value={form.inviteCode} onChange={e => update('inviteCode', e.target.value.toUpperCase())}
-                      className="input-field pl-10 uppercase tracking-widest" style={{ background: 'rgba(255,255,255,0.06)', borderColor: 'rgba(255,255,255,0.10)', color: 'white' }}
+                      className="input-field pl-10 uppercase tracking-widest"
                       placeholder="MARIO01" maxLength={8} />
                   </div>
-                  <p className="text-white/30 text-xs mt-2">Get the invite code from your household head.</p>
+                  <p className="text-[color:var(--text-muted)] text-xs mt-2">Get the invite code from your household head.</p>
                 </div>
               )}
 
               <div className="flex gap-3 mt-6">
-                <button onClick={() => setStep(2)} className="btn-ghost text-white/50 border-white/10 flex-1">
+                <button onClick={() => setStep(2)} className="btn-ghost text-[color:var(--text-secondary)] border-[color:var(--border-color)] flex-1">
                   <ChevronLeft size={16} /> Back
                 </button>
                 <button id="register-submit" onClick={handleSubmit} disabled={isLoading}
                   className="btn-primary flex-1 py-3 disabled:opacity-40">
                   {isLoading ? (
                     <span className="flex items-center gap-2">
-                      <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      <span className="w-4 h-4 border-2 border-[color:var(--border-color)] border-t-current rounded-full animate-spin" />
                       Creating...
                     </span>
                   ) : 'Create Household 🎉'}
@@ -250,7 +244,7 @@ export default function RegisterPage() {
             </motion.div>
           )}
 
-          <p className="text-center text-white/30 text-sm mt-6">
+          <p className="text-center text-[color:var(--text-muted)] text-sm mt-6">
             Already have an account?{' '}
             <Link href="/auth/login" className="text-brand-400 hover:text-brand-300 font-medium transition-colors">
               Sign in

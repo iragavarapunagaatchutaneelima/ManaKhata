@@ -6,8 +6,9 @@ import api from '@/lib/api'
 import { formatCurrency } from '@/hooks/useUtils'
 import type { HouseholdAnalytics } from '@/types'
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
+import { CHART_PALETTE } from '@/constants/theme'
 
-const COLORS = ['#6366f1','#f59e0b','#10b981','#f43f5e','#06b6d4','#7c3aed','#84cc16','#ec4899']
+const COLORS = CHART_PALETTE
 
 export default function HouseholdDashboard() {
   const [data, setData] = useState<HouseholdAnalytics | null>(null)
@@ -65,8 +66,8 @@ export default function HouseholdDashboard() {
             <AreaChart data={data.monthlyTrend}>
               <defs>
                 <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
+                  <stop offset="5%" stopColor="var(--accent)" stopOpacity={0.3} />
+                  <stop offset="95%" stopColor="var(--accent)" stopOpacity={0} />
                 </linearGradient>
               </defs>
               <XAxis dataKey="month" tick={{ fontSize: 12, fill: 'var(--text-muted)' }} axisLine={false} tickLine={false} />
@@ -75,7 +76,7 @@ export default function HouseholdDashboard() {
                 formatter={(v: any) => [formatCurrency(Number(v)), 'Spent']}
                 contentStyle={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '12px', color: 'var(--text-primary)' }}
               />
-              <Area type="monotone" dataKey="total" stroke="#6366f1" strokeWidth={2} fill="url(#colorTotal)" dot={{ r: 4, fill: '#6366f1' }} />
+              <Area type="monotone" dataKey="total" stroke="var(--accent)" strokeWidth={2} fill="url(#colorTotal)" dot={{ r: 4, fill: 'var(--accent)' }} />
             </AreaChart>
           </ResponsiveContainer>
         </div>

@@ -196,14 +196,14 @@ export default function AddExpenseModal({ onClose, onSuccess, prefill }: Props) 
                 className="mx-5 mt-3 rounded-xl overflow-hidden border border-emerald-500/30 relative"
               >
                 <img src={scannedPreview} alt="Receipt" className="w-full h-20 object-cover opacity-60" />
-                <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+                <div className="absolute inset-0 flex items-center justify-center bg-[var(--surface-2)]">
                   <div className="flex items-center gap-2 text-emerald-400 text-sm font-semibold">
                     <CheckCircle2 size={16} /> Receipt scanned & fields auto-filled
                   </div>
                 </div>
                 <button
                   onClick={() => setScannedPreview(null)}
-                  className="absolute top-1 right-1 p-1 rounded-full bg-black/40 text-white/70"
+                  className="absolute top-1 right-1 p-1 rounded-full bg-[var(--surface-2)] text-[color:var(--text-secondary)]"
                 >
                   <X size={12} />
                 </button>
@@ -222,7 +222,7 @@ export default function AddExpenseModal({ onClose, onSuccess, prefill }: Props) 
                 type="button"
                 onClick={() => handleTabSwitch(t.id as any)}
                 className={`flex-1 py-1.5 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 transition-all ${
-                  tab === t.id ? 'bg-brand-600 text-white shadow' : 'text-white/50 hover:text-white/70'
+                  tab === t.id ? 'bg-brand-600 text-white shadow' : 'text-[color:var(--text-secondary)] hover:text-[color:var(--text-secondary)]'
                 }`}
               >
                 {t.icon}{t.label}
@@ -295,13 +295,13 @@ export default function AddExpenseModal({ onClose, onSuccess, prefill }: Props) 
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input id="exp-household" type="checkbox" checked={form.paidForHousehold}
                     onChange={e => update('paidForHousehold', e.target.checked)}
-                    className="w-4 h-4 accent-indigo-500 rounded" />
+                    className="w-4 h-4 accent-brand-500 rounded" />
                   <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>Paid for household</span>
                 </label>
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input id="exp-reimb" type="checkbox" checked={form.isReimbursable}
                     onChange={e => update('isReimbursable', e.target.checked)}
-                    className="w-4 h-4 accent-indigo-500 rounded" />
+                    className="w-4 h-4 accent-brand-500 rounded" />
                   <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>Reimbursable</span>
                 </label>
               </div>
@@ -315,7 +315,7 @@ export default function AddExpenseModal({ onClose, onSuccess, prefill }: Props) 
                       <Users size={15} className="text-brand-400" />
                       <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Split Between Members</span>
                     </div>
-                    <div className="flex gap-1 p-0.5 rounded-lg bg-white/5 border border-white/8">
+                    <div className="flex gap-1 p-0.5 rounded-lg bg-[var(--surface-2)] border border-[color:var(--border-color)]">
                       {(['equal','custom'] as const).map(m => (
                         <button key={m} type="button"
                           onClick={() => {
@@ -326,7 +326,7 @@ export default function AddExpenseModal({ onClose, onSuccess, prefill }: Props) 
                               setSplits(s => s.map(sp => ({ ...sp, amount: per })))
                             }
                           }}
-                          className={`text-[10px] px-2 py-0.5 rounded-md font-medium transition-all ${splitMode === m ? 'bg-brand-600 text-white' : 'text-white/40'}`}
+                          className={`text-[10px] px-2 py-0.5 rounded-md font-medium transition-all ${splitMode === m ? 'bg-brand-600 text-white' : 'text-[color:var(--text-muted)]'}`}
                         >
                           {m}
                         </button>

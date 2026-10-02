@@ -125,15 +125,15 @@ export default function InvestmentsPage() {
         </div>
 
         {/* Growth Chart Card */}
-        <div className="lg:col-span-2 glass-card p-6 border border-white/5 h-64 flex flex-col">
+        <div className="lg:col-span-2 glass-card p-6 border border-[color:var(--border-color)] h-64 flex flex-col">
           <h3 className="text-sm font-medium mb-4" style={{ color: 'var(--text-muted)' }}>Portfolio Growth (6 Months)</h3>
           <div className="flex-1 min-h-0">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={chartData}>
                 <defs>
                   <linearGradient id="colorVal" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="var(--brand-color)" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="var(--brand-color)" stopOpacity={0}/>
+                    <stop offset="5%" stopColor="var(--accent)" stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor="var(--accent)" stopOpacity={0}/>
                   </linearGradient>
                 </defs>
                 <XAxis dataKey="name" stroke="var(--text-muted)" fontSize={12} tickLine={false} axisLine={false} />
@@ -142,7 +142,7 @@ export default function InvestmentsPage() {
                   itemStyle={{ color: 'var(--text-primary)' }}
                   formatter={(value: any) => formatCurrency(Number(value))}
                 />
-                <Area type="monotone" dataKey="val" stroke="var(--brand-color)" strokeWidth={3} fillOpacity={1} fill="url(#colorVal)" />
+                <Area type="monotone" dataKey="val" stroke="var(--accent)" strokeWidth={3} fillOpacity={1} fill="url(#colorVal)" />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -201,7 +201,7 @@ export default function InvestmentsPage() {
       </AnimatePresence>
 
       <div className="glass-card overflow-hidden">
-        <div className="p-4 border-b border-white/5 flex items-center justify-between">
+        <div className="p-4 border-b border-[color:var(--border-color)] flex items-center justify-between">
           <h3 className="font-semibold">Your Assets</h3>
         </div>
         <div className="divide-y divide-white/5">
@@ -221,7 +221,7 @@ export default function InvestmentsPage() {
                   <div>
                     <h4 className="font-semibold" style={{ color: 'var(--text-primary)' }}>{inv.name}</h4>
                     <div className="flex items-center gap-2 text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
-                      <span className="px-1.5 py-0.5 rounded bg-white/5">{inv.assetType.replace('_', ' ')}</span>
+                      <span className="px-1.5 py-0.5 rounded bg-[var(--surface-2)]">{inv.assetType.replace('_', ' ')}</span>
                       {inv.platformOrBroker && <span>• {inv.platformOrBroker}</span>}
                       <span className="flex items-center gap-1"><User size={10}/> {inv.owner?.fullName}</span>
                     </div>
