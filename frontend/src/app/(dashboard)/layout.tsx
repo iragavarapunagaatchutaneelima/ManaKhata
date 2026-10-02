@@ -1,261 +1,200 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
-import { motion, AnimatePresence } from 'framer-motion'
-import {
-  LayoutDashboard, Home, Receipt, RefreshCcw, Wallet, Car,
-  PiggyBank, Brain, BarChart3, Plane, MessageSquare, Settings,
-  ChevronLeft, ChevronRight, Bell, Sun, Moon, Menu, X, LogOut, User
-} from 'lucide-react'
-import { useAuthStore } from '@/store/authStore'
-import { getRoleBadge } from '@/hooks/useUtils'
-import { useWebSocket } from '@/hooks/useWebSocket'
-import FloatingCalculator from '@/components/ui/FloatingCalculator'
-import toast from 'react-hot-toast'
-import { useTheme } from 'next-themes'
+import { usePathname, useRouter } from 'next/navigation'
+import { LogOut, Menu, Palette, Plus, RotateCcw, Sparkles, X } from 'lucide-react'
+import { Logo } from '@/components/Logo'
+import { Avatar, Button, ConfirmHost, IconButton, Modal, PageSkeleton, cx, confirmAction } from '@/components/ui'
+import { ThemePicker } from '@/components/ThemePicker'
+import TransactionModal, { openAddExpense } from '@/components/TransactionModal'
+import { ALL_NAV, NAV } from '@/components/nav'
+import { useSession } from '@/store/session'
+import { useHousehold, useLedger } from '@/store/ledger'
+import { resetDemo } from '@/lib/backend'
+import { ROLE_LABELS } from '@/lib/categories'
 
-const navItems = [
-  { href: '/dashboard',       icon: LayoutDashboard, label: 'Dashboard',      group: 'main' },
-  { href: '/household',       icon: Home,            label: 'Household',      group: 'main' },
-  { href: '/expenses',        icon: Receipt,         label: 'Expenses',       group: 'finance' },
-  { href: '/reimbursements',  icon: RefreshCcw,      label: 'Reimburse',      group: 'finance' },
-  { href: '/wallet',          icon: Wallet,          label: 'Wallet',         group: 'finance' },
-  { href: '/budget',          icon: PiggyBank,       label: 'Budget',         group: 'finance' },
-  { href: '/vehicles',        icon: Car,             label: 'Vehicles',       group: 'assets' },
-  { href: '/trips',           icon: Plane,           label: 'Trips',          group: 'assets' },
-  { href: '/ai-advisor',      icon: Brain,           label: 'AI Advisor',     group: 'intelligence' },
-  { href: '/analytics',       icon: BarChart3,       label: 'Analytics',      group: 'intelligence' },
-  { href: '/chat',            icon: MessageSquare,   label: 'Family Chat',    group: 'social' },
-  { href: '/settings',        icon: Settings,        label: 'Settings',       group: 'account' },
+const MOBILE_TABS = [
+  { href: '/dashboard', label: 'Home' },
+  { href: '/expenses', label: 'Activity' },
+  { href: '__add__', label: 'Add' },
+  { href: '/splits', label: 'Split' },
+  { href: '__more__', label: 'More' },
 ]
 
-const groupLabels: Record<string, string> = {
-  main: 'Overview',
-  finance: 'Finance',
-  assets: 'Assets',
-  intelligence: 'Intelligence',
-  social: 'Social',
-  account: 'Account',
-}
-
-export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const { user, isAuthenticated, logout } = useAuthStore()
+export default function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
-  const pathname = usePathname()
-  const [collapsed, setCollapsed] = useState(false)
-  const [mobileOpen, setMobileOpen] = useState(false)
-  const { theme, setTheme, systemTheme } = useTheme()
-  const [notifications, setNotifications] = useState(3)
-  const [mounted, setMounted] = useState(false)
-  
-  // Initialize Real-time WebSocket connection
-  useWebSocket()
-
+  const pathname = (usePathname() || '/').replace(/(.)\/$/, '$1')
+  const status = useSession((s) => s.status)
+  const mode = useSession((s) => s.mode)
+  const signOut = useSession((s) => s.signOut)
+  const startDemo = useSession((s) => s.startDemo)
+  const loading = useLedger((s) => s.loading)
+  const error = useLedger((s) => s.error)
+  const refresh = useLedger((s) => s.refresh)
+  const { data, me, canSeeAnalytics } = useHousehold()
+  // The drawer belongs to the page it was opened on, so navigating closes it.
+  const [drawerPath, setDrawerPath] = useState<string | null>(null)
+  const drawer = drawerPath === pathname
+  const setDrawer = (open: boolean) => setDrawerPath(open ? pathname : null)
+  const [themeOpen, setThemeOpen] = useState(false)
   useEffect(() => {
-    setMounted(true)
-  }, [])
+    if (status === 'signedOut') router.replace('/auth/login')
+    if (status === 'onboarding') router.replace('/onboarding')
+  }, [status, router])
 
-  useEffect(() => {
-    if (!isAuthenticated || !user) router.replace('/auth/login')
-  }, [isAuthenticated, user, router])
+  if (status !== 'ready') return <Splash />
 
-  const handleLogout = () => {
-    logout()
-    toast.success('Logged out successfully')
-    router.replace('/auth/login')
+  const visibleNav = NAV.map((g) => ({ ...g, items: g.items.filter((i) => !i.analytics || canSeeAnalytics) })).filter((g) => g.items.length)
+  const title = ALL_NAV.find((n) => n.href === pathname)?.label ?? 'Kinfold'
+
+  async function handleSignOut() {
+    if (mode === 'live' && !(await confirmAction({ title: 'Sign out?', body: 'You can sign back in any time.', confirmLabel: 'Sign out' }))) return
+    await signOut()
+    router.replace(mode === 'demo' ? '/' : '/auth/login')
   }
 
-  if (!user) return null
+  async function handleResetDemo() {
+    if (!(await confirmAction({ title: 'Reset the demo?', body: 'This restores the sample household and removes changes you made in this browser.', confirmLabel: 'Reset demo' }))) return
+    resetDemo()
+    startDemo(useSession.getState().userId ?? undefined)
+  }
 
-  const badge = getRoleBadge(user.role)
-  const groups = [...new Set(navItems.map(n => n.group))]
-
-  const SidebarContent = ({ mobile = false }) => (
-    <div className="flex flex-col h-full">
-      {/* Logo */}
-      <div className={`flex items-center gap-3 p-4 mb-2 ${collapsed && !mobile ? 'justify-center' : ''}`}>
-        <div className="w-9 h-9 min-w-[36px] rounded-xl gradient-brand flex items-center justify-center font-bold text-lg shadow-glow-brand">
-          M
+  const sidebar = (
+    <nav className="scrollbar-thin flex-1 overflow-y-auto px-3 pb-6" aria-label="Main">
+      {visibleNav.map((group) => (
+        <div key={group.label} className="mt-5">
+          <div className="px-3 pb-1.5 text-[11px] font-bold uppercase tracking-[.08em] text-ink-3">{group.label}</div>
+          {group.items.map((item) => {
+            const active = pathname === item.href
+            return (
+              <Link key={item.href} href={item.href}
+                className={cx('group relative flex items-center gap-3 rounded-[10px] px-3 py-2 text-[14px] font-medium transition',
+                  active ? 'bg-primary-soft text-primary' : 'text-ink-2 hover:bg-surface-2 hover:text-ink')}>
+                {active && <span className="absolute left-0 top-2 bottom-2 w-[3px] rounded-r bg-saffron" />}
+                <item.icon size={18} strokeWidth={active ? 2.3 : 1.9} />
+                {item.label}
+              </Link>
+            )
+          })}
         </div>
-        {(!collapsed || mobile) && (
-          <div>
-            <div className="font-display font-bold text-[15px]" style={{ color: 'var(--text-primary)' }}>ManaKhata</div>
-            <div className="text-[10px]" style={{ color: 'var(--text-muted)' }}>Our Household Account</div>
-          </div>
-        )}
-      </div>
+      ))}
+    </nav>
+  )
 
-      {/* Nav Groups */}
-      <nav className="flex-1 overflow-y-auto px-2 space-y-0.5">
-        {groups.map(group => {
-          const items = navItems.filter(n => n.group === group)
-          return (
-            <div key={group}>
-              {(!collapsed || mobile) && (
-                <div className="px-3 py-2 mt-3 mb-1 text-[10px] font-semibold uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>
-                  {groupLabels[group]}
-                </div>
-              )}
-              {collapsed && !mobile && <div className="my-3 h-px mx-3" style={{ background: 'var(--border-color)' }} />}
-              {items.map(item => {
-                const Icon = item.icon
-                const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    id={`nav-${item.label.toLowerCase().replace(' ', '-')}`}
-                    onClick={() => setMobileOpen(false)}
-                    className={`sidebar-item ${isActive ? 'active' : ''} ${collapsed && !mobile ? 'justify-center px-2' : ''}`}
-                    title={collapsed ? item.label : undefined}
-                  >
-                    <Icon size={18} className="min-w-[18px]" />
-                    {(!collapsed || mobile) && <span>{item.label}</span>}
-                  </Link>
-                )
-              })}
-            </div>
-          )
-        })}
-      </nav>
-
-      {/* User Profile */}
-      <div className="p-3 mt-2 border-t" style={{ borderColor: 'var(--sidebar-border)' }}>
-        <div className={`flex items-center gap-3 p-2 rounded-xl ${collapsed && !mobile ? 'justify-center' : ''}`}
-          style={{ background: 'var(--sidebar-hover)' }}>
-          <div className="w-8 h-8 min-w-[32px] rounded-full gradient-brand flex items-center justify-center text-white font-bold text-sm">
-            {user.fullName.charAt(0)}
-          </div>
-          {(!collapsed || mobile) && (
-            <div className="flex-1 min-w-0">
-              <div className="text-sm font-semibold truncate" style={{ color: 'var(--text-primary)' }}>{user.fullName}</div>
-              <span className={`badge ${badge.className} text-[10px]`}>{badge.label}</span>
-            </div>
-          )}
-          {(!collapsed || mobile) && (
-            <button onClick={handleLogout} className="text-rose-400 hover:text-rose-300 transition-colors p-1" title="Logout">
-              <LogOut size={15} />
-            </button>
-          )}
+  const profileFooter = (
+    <div className="border-t border-line p-3">
+      <div className="flex items-center gap-3 rounded-[12px] p-2">
+        <Avatar name={me?.full_name ?? '?'} size={36} />
+        <div className="min-w-0 flex-1">
+          <div className="truncate text-sm font-semibold text-ink">{me?.full_name}</div>
+          <div className="truncate text-[12px] text-ink-3">{ROLE_LABELS[me?.role ?? ''] ?? ''} · {data?.household.name}</div>
         </div>
+        <IconButton label={mode === 'demo' ? 'Leave demo' : 'Sign out'} onClick={handleSignOut}><LogOut size={17} /></IconButton>
       </div>
     </div>
   )
 
   return (
-    <div className="flex h-screen overflow-hidden" style={{ background: 'var(--bg-primary)' }}>
-      {/* Desktop Sidebar */}
-      <aside
-        className="sidebar hidden lg:flex flex-col h-full relative z-20 transition-all duration-300"
-        style={{ width: collapsed ? '64px' : '220px' }}
-      >
-        <SidebarContent />
-        {/* Collapse toggle */}
-        <button
-          onClick={() => setCollapsed(!collapsed)}
-          className="absolute -right-3 top-20 w-6 h-6 rounded-full flex items-center justify-center shadow-md z-30 transition-colors"
-          style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', color: 'var(--text-muted)' }}
-        >
-          {collapsed ? <ChevronRight size={12} /> : <ChevronLeft size={12} />}
-        </button>
+    <div className="flex min-h-dvh bg-bg">
+      {/* Desktop sidebar */}
+      <aside className="sticky top-0 hidden h-dvh w-[248px] shrink-0 flex-col border-r border-line bg-surface lg:flex">
+        <div className="px-5 pt-5"><Link href="/dashboard"><Logo size={30} /></Link></div>
+        {sidebar}
+        {profileFooter}
       </aside>
 
-      {/* Mobile Sidebar Overlay */}
-      <AnimatePresence>
-        {mobileOpen && (
-          <>
-            <motion.div
-              className="fixed inset-0 bg-black/60 z-30 lg:hidden"
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              onClick={() => setMobileOpen(false)}
-            />
-            <motion.aside
-              className="sidebar fixed left-0 top-0 h-full z-40 lg:hidden flex flex-col"
-              style={{ width: '240px' }}
-              initial={{ x: -240 }} animate={{ x: 0 }} exit={{ x: -240 }}
-              transition={{ type: 'spring', damping: 25, stiffness: 250 }}
-            >
-              <div className="absolute top-4 right-4">
-                <button onClick={() => setMobileOpen(false)} style={{ color: 'var(--text-muted)' }}>
-                  <X size={20} />
-                </button>
-              </div>
-              <SidebarContent mobile />
-            </motion.aside>
-          </>
-        )}
-      </AnimatePresence>
+      {/* Mobile drawer */}
+      {drawer && (
+        <div className="fixed inset-0 z-40 lg:hidden">
+          <div className="absolute inset-0 bg-overlay" onClick={() => setDrawer(false)} />
+          <aside className="safe-top absolute inset-y-0 left-0 flex w-[82%] max-w-[300px] flex-col bg-surface shadow-[var(--shadow-lg)]">
+            <div className="flex items-center justify-between px-5 pt-5"><Logo size={28} /><IconButton label="Close menu" onClick={() => setDrawer(false)}><X size={18} /></IconButton></div>
+            {sidebar}
+            {profileFooter}
+          </aside>
+        </div>
+      )}
 
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Top Bar */}
-        <header className="h-16 flex items-center gap-4 px-4 md:px-6 flex-shrink-0 border-b"
-          style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border-color)' }}>
-          {/* Mobile menu button */}
-          <button className="lg:hidden p-2 rounded-lg" style={{ color: 'var(--text-muted)' }}
-            onClick={() => setMobileOpen(true)}>
-            <Menu size={20} />
-          </button>
-
-          {/* Page title */}
-          <div className="flex-1">
-            <h1 className="font-display font-bold text-lg" style={{ color: 'var(--text-primary)' }}>
-              {navItems.find(n => n.href === pathname)?.label || 'ManaKhata'}
-            </h1>
-            {user.householdName && (
-              <p className="text-xs hidden sm:block" style={{ color: 'var(--text-muted)' }}>{user.householdName}</p>
-            )}
-          </div>
-
-          {/* Actions */}
-          <div className="flex items-center gap-2">
-            {/* Theme toggle */}
-            <button
-              id="theme-toggle"
-              onClick={() => {
-                const currentTheme = theme === 'system' ? systemTheme : theme;
-                setTheme(currentTheme === 'dark' ? 'light' : 'dark')
-              }}
-              className="p-2 rounded-xl transition-colors"
-              style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', color: 'var(--text-muted)' }}
-            >
-              {mounted && (theme === 'dark' || (theme === 'system' && systemTheme === 'dark')) ? <Sun size={16} /> : <Moon size={16} />}
-            </button>
-
-            {/* Notifications */}
-            <button
-              id="notification-bell"
-              className="relative p-2 rounded-xl transition-colors"
-              style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', color: 'var(--text-muted)' }}
-              onClick={() => setNotifications(0)}
-            >
-              <Bell size={16} />
-              {notifications > 0 && <span className="notification-dot" />}
-            </button>
-
-            {/* User avatar */}
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl cursor-pointer"
-              style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)' }}>
-              <div className="w-7 h-7 rounded-full gradient-brand flex items-center justify-center text-white font-bold text-xs">
-                {user.fullName.charAt(0)}
-              </div>
-              <span className="hidden sm:block text-sm font-medium truncate max-w-28" style={{ color: 'var(--text-primary)' }}>
-                {user.fullName.split(' ')[0]}
+      <div className="flex min-w-0 flex-1 flex-col">
+        {mode === 'demo' && (
+          <div className="safe-top border-b border-saffron/30 bg-saffron-soft px-4 py-2 text-[13px] text-saffron-ink">
+            <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-4 gap-y-1">
+              <span className="inline-flex items-center gap-1.5 font-semibold"><Sparkles size={14} /> Demo household</span>
+              <span className="hidden sm:inline">You’re viewing as {me?.full_name}. Changes stay in this browser only.</span>
+              <span className="ml-auto flex items-center gap-3 font-semibold">
+                <Link href="/demo" className="underline-offset-2 hover:underline">Switch person</Link>
+                <button onClick={handleResetDemo} className="inline-flex items-center gap-1 underline-offset-2 hover:underline"><RotateCcw size={12} />Reset</button>
+                <Link href="/auth/register" className="underline-offset-2 hover:underline">Create your account →</Link>
               </span>
             </div>
           </div>
+        )}
+
+        <header className={cx('sticky top-0 z-30 flex h-14 items-center gap-2 border-b border-line bg-surface/90 px-3 backdrop-blur sm:px-5', mode !== 'demo' && 'safe-top')}>
+          <IconButton className="lg:hidden" label="Open menu" onClick={() => setDrawer(true)}><Menu size={20} /></IconButton>
+          <div className="lg:hidden"><Logo size={24} withText={false} /></div>
+          <h1 className="truncate font-display text-[16px] font-bold text-ink lg:text-[17px]">{title}</h1>
+          <div className="ml-auto flex items-center gap-1">
+            <Button size="sm" className="hidden sm:inline-flex" icon={<Plus size={16} />} onClick={() => openAddExpense()}>Add</Button>
+            <IconButton label="Change theme" onClick={() => setThemeOpen(true)}><Palette size={18} /></IconButton>
+            <Link href="/settings" aria-label="Settings" className="ml-1"><Avatar name={me?.full_name ?? '?'} size={30} /></Link>
+          </div>
         </header>
 
-        {/* Page Content */}
-        <main className="flex-1 overflow-auto p-4 md:p-6 page-enter">
-          {children}
+        <main className="mx-auto w-full max-w-6xl flex-1 px-4 pb-28 pt-5 sm:px-6 lg:pb-10">
+          {error && !data ? (
+            <div className="card mx-auto mt-10 max-w-md p-6 text-center">
+              <h2 className="font-display text-lg font-bold">Couldn’t load your household</h2>
+              <p className="mt-1 text-sm text-ink-3">{error}</p>
+              <Button className="mt-4" onClick={() => refresh()}>Try again</Button>
+            </div>
+          ) : loading || !data ? <PageSkeleton /> : children}
         </main>
       </div>
 
-      {/* Floating Calculator */}
-      <FloatingCalculator />
+      {/* Phone bottom bar */}
+      <nav className="safe-bottom fixed inset-x-0 bottom-0 z-30 border-t border-line bg-surface/95 backdrop-blur lg:hidden" aria-label="Quick">
+        <div className="mx-auto flex max-w-md items-end justify-around px-2">
+          {MOBILE_TABS.map((t) => {
+            if (t.href === '__add__') {
+              return (
+                <button key={t.href} onClick={() => openAddExpense()} aria-label="Add expense"
+                  className="-mt-5 mb-1 flex h-14 w-14 items-center justify-center rounded-[18px] bg-primary text-on-primary shadow-[var(--shadow-lg)] ring-4 ring-bg">
+                  <Plus size={26} />
+                </button>
+              )
+            }
+            const item = ALL_NAV.find((n) => n.href === t.href)
+            const Icon = t.href === '__more__' ? Menu : item!.icon
+            const active = pathname === t.href
+            return (
+              <button key={t.href} onClick={() => (t.href === '__more__' ? setDrawer(true) : router.push(t.href))}
+                className={cx('flex flex-1 flex-col items-center gap-0.5 py-2 text-[11px] font-semibold', active ? 'text-primary' : 'text-ink-3')}>
+                <Icon size={21} strokeWidth={active ? 2.4 : 1.9} />
+                {t.label}
+              </button>
+            )
+          })}
+        </div>
+      </nav>
+
+      <TransactionModal />
+      <ConfirmHost />
+      <Modal open={themeOpen} onClose={() => setThemeOpen(false)} title="Theme" description="Pick a look for Kinfold. Saved on this device." wide>
+        <ThemePicker onPicked={() => setThemeOpen(false)} />
+      </Modal>
+    </div>
+  )
+}
+
+function Splash() {
+  return (
+    <div className="flex min-h-dvh items-center justify-center bg-bg">
+      <div className="flex flex-col items-center gap-4">
+        <Logo size={40} />
+        <div className="h-1 w-32 overflow-hidden rounded-full bg-surface-3"><div className="h-full w-1/3 animate-[pulse_1s_ease-in-out_infinite] rounded-full bg-primary" /></div>
+      </div>
     </div>
   )
 }

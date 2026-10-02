@@ -1,197 +1,105 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { motion } from 'framer-motion'
-import { Plus, TrendingUp, TrendingDown, Minus } from 'lucide-react'
-import api from '@/lib/api'
-import { formatCurrency, formatDate } from '@/hooks/useUtils'
-import type { Expense, ExpensePrediction } from '@/types'
-import toast from 'react-hot-toast'
-import AddExpenseModal from '@/components/ui/AddExpenseModal'
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
+import { useMemo, useState } from 'react'
+import { Download, Plus, Receipt, Search } from 'lucide-react'
+import { Button, Card, EmptyState, PageHeader, Segmented, Stat } from '@/components/ui'
+import { ExpenseRow, IncomeRow } from '@/components/Rows'
+import { MonthPicker } from '@/components/MonthPicker'
+import { openAddExpense, openAddIncome } from '@/components/TransactionModal'
+import { useHousehold } from '@/store/ledger'
+import { CATEGORIES, category } from '@/lib/categories'
+import { formatMoney, monthKey, relativeDay, sumMoney, fromMinor, toMinor } from '@/lib/money'
+import { inMonth, toCSV } from '@/lib/finance'
+import { saveFile } from '@/lib/download'
+import type { Expense, Income } from '@/lib/model'
 
-export default function ExpensesPage() {
-  const [expenses, setExpenses] = useState<Expense[]>([])
-  const [summary, setSummary] = useState<any>(null)
-  const [predictions, setPredictions] = useState<ExpensePrediction[]>([])
-  const [loading, setLoading] = useState(true)
-  const [showModal, setShowModal] = useState(false)
-  const [page, setPage] = useState(0)
-  const [totalPages, setTotalPages] = useState(0)
+type Kind = 'all' | 'expense' | 'income'
+type Row = { kind: 'expense'; date: string; e: Expense } | { kind: 'income'; date: string; i: Income }
 
-  useEffect(() => { loadData() }, [page])
+export default function TransactionsPage() {
+  const { data, currency, members, memberName } = useHousehold()
+  const [month, setMonth] = useState(monthKey(new Date()))
+  const [kind, setKind] = useState<Kind>('all')
+  const [cat, setCat] = useState('')
+  const [who, setWho] = useState('')
+  const [q, setQ] = useState('')
 
-  const loadData = async () => {
-    setLoading(true)
-    try {
-      const [eRes, sRes, pRes] = await Promise.all([
-        api.getMyExpenses(page, 15),
-        api.getExpenseSummary(),
-        api.getPredictions(),
-      ])
-      if (eRes.success) {
-        setExpenses(eRes.data.content || [])
-        setTotalPages(eRes.data.totalPages || 0)
-      }
-      if (sRes.success) setSummary(sRes.data)
-      if (pRes.success) setPredictions(pRes.data || [])
-    } finally { setLoading(false) }
-  }
+  const { rows, spent, income } = useMemo(() => {
+    if (!data) return { rows: [] as Row[], spent: 0, income: 0 }
+    const query = q.trim().toLowerCase()
+    const expenses = data.expenses.filter((e) => inMonth(e.expense_date, month)
+      && (!cat || e.category === cat) && (!who || e.paid_by === who)
+      && (!query || e.description.toLowerCase().includes(query) || (e.notes ?? '').toLowerCase().includes(query)))
+    const incomes = data.incomes.filter((i) => inMonth(i.income_date, month) && !cat && (!who || i.user_id === who)
+      && (!query || i.source.toLowerCase().includes(query) || (i.notes ?? '').toLowerCase().includes(query)))
+    const rows: Row[] = [
+      ...(kind !== 'income' ? expenses.map((e) => ({ kind: 'expense' as const, date: e.expense_date, e })) : []),
+      ...(kind !== 'expense' ? incomes.map((i) => ({ kind: 'income' as const, date: i.income_date, i })) : []),
+    ].sort((a, b) => b.date.localeCompare(a.date))
+    return { rows, spent: sumMoney(expenses, (e) => e.amount), income: sumMoney(incomes, (i) => i.amount) }
+  }, [data, month, kind, cat, who, q])
 
-  const trendIcon = (trend: string) => {
-    if (trend === 'UP') return <TrendingUp size={14} className="text-rose-400" />
-    if (trend === 'DOWN') return <TrendingDown size={14} className="text-emerald-400" />
-    return <Minus size={14} className="text-yellow-400" />
+  const groups = useMemo(() => {
+    const map = new Map<string, Row[]>()
+    for (const r of rows) map.set(r.date, [...(map.get(r.date) ?? []), r])
+    return [...map.entries()]
+  }, [rows])
+
+  function exportCSV() {
+    const csv = toCSV(rows.map((r) => r.kind === 'expense'
+      ? { Date: r.e.expense_date, Type: 'Expense', Description: r.e.description, Category: category(r.e.category).label, Person: memberName(r.e.paid_by), Method: r.e.payment_method, Visibility: r.e.visibility, Amount: -r.e.amount, Notes: r.e.notes ?? '' }
+      : { Date: r.i.income_date, Type: 'Income', Description: r.i.source, Category: 'Income', Person: memberName(r.i.user_id), Method: '', Visibility: 'HOUSEHOLD', Amount: r.i.amount, Notes: r.i.notes ?? '' }))
+    if (csv) saveFile(`kinfold-transactions-${month}.csv`, csv)
   }
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto">
-      {/* Summary */}
-      {summary && (
-        <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-          <div className="glass-card p-5">
-            <div className="w-10 h-10 gradient-rose rounded-xl flex items-center justify-center text-xl mb-3">📤</div>
-            <div className="font-display font-bold text-xl" style={{ color: 'var(--text-primary)' }}>
-              {formatCurrency(summary.personalTotal)}
-            </div>
-            <div className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>My Spending This Month</div>
-          </div>
-          {summary.householdTotal > 0 && (
-            <div className="glass-card p-5">
-              <div className="w-10 h-10 gradient-brand rounded-xl flex items-center justify-center text-xl mb-3">🏠</div>
-              <div className="font-display font-bold text-xl" style={{ color: 'var(--text-primary)' }}>
-                {formatCurrency(summary.householdTotal)}
-              </div>
-              <div className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>Household Total</div>
-            </div>
-          )}
-          <div className="glass-card p-5">
-            <div className="w-10 h-10 gradient-gold rounded-xl flex items-center justify-center text-xl mb-3">📋</div>
-            <div className="font-display font-bold text-xl" style={{ color: 'var(--text-primary)' }}>
-              {expenses.length}
-            </div>
-            <div className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>Transactions</div>
-          </div>
-        </div>
-      )}
+    <div>
+      <PageHeader title="Transactions" subtitle="Everything spent and earned. Tap an entry you added to edit it."
+        actions={<>
+          <Button variant="secondary" icon={<Download size={16} />} onClick={exportCSV} disabled={!rows.length}>Export CSV</Button>
+          <Button variant="secondary" icon={<Plus size={16} />} onClick={openAddIncome}>Income</Button>
+          <Button icon={<Plus size={16} />} onClick={() => openAddExpense()}>Expense</Button>
+        </>} />
 
-      {/* Bar Chart */}
-      {summary?.categoryBreakdown?.length > 0 && (
-        <div className="glass-card p-6">
-          <h3 className="font-display font-semibold text-base mb-4" style={{ color: 'var(--text-primary)' }}>
-            Category Breakdown
-          </h3>
-          <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={summary.categoryBreakdown.map((r: any[]) => ({ category: r[0], amount: r[1] }))}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.10)" />
-              <XAxis dataKey="category" tick={{ fontSize: 10, fill: 'var(--text-muted)' }} axisLine={false} tickLine={false}
-                tickFormatter={(v: string) => v.slice(0,5)} />
-              <YAxis hide />
-              <Tooltip formatter={(v: any) => formatCurrency(Number(v))}
-                contentStyle={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '12px', color: 'var(--text-primary)' }} />
-              <Bar dataKey="amount" fill="#6366f1" radius={[6,6,0,0]} />
-            </BarChart>
-          </ResponsiveContainer>
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <MonthPicker value={month} onChange={setMonth} />
+        <Segmented value={kind} onChange={setKind} options={[{ value: 'all', label: 'All' }, { value: 'expense', label: 'Spent' }, { value: 'income', label: 'Income' }]} />
+        <select className="field h-10 w-auto" value={cat} onChange={(e) => setCat(e.target.value)} aria-label="Category">
+          <option value="">All categories</option>
+          {CATEGORIES.map((c) => <option key={c.key} value={c.key}>{c.label}</option>)}
+        </select>
+        <select className="field h-10 w-auto" value={who} onChange={(e) => setWho(e.target.value)} aria-label="Person">
+          <option value="">Everyone</option>
+          {members.map((m) => <option key={m.user_id} value={m.user_id}>{m.full_name}</option>)}
+        </select>
+        <div className="relative min-w-[180px] flex-1">
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-3" />
+          <input className="field h-10 pl-9" placeholder="Search" value={q} onChange={(e) => setQ(e.target.value)} />
         </div>
-      )}
-
-      {/* Predictions */}
-      {predictions.length > 0 && (
-        <div className="glass-card p-6">
-          <h3 className="font-display font-semibold text-base mb-4" style={{ color: 'var(--text-primary)' }}>
-            🤖 Next Month Predictions
-          </h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {predictions.slice(0, 6).map((pred, i) => (
-              <div key={pred.category} className="p-3 rounded-xl border"
-                style={{ borderColor: 'var(--border-color)', background: 'var(--bg-primary)' }}>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium capitalize" style={{ color: 'var(--text-secondary)' }}>
-                    {pred.category.replace('_', ' ').toLowerCase()}
-                  </span>
-                  <div className="flex items-center gap-1">
-                    {trendIcon(pred.trend)}
-                    <span className={`text-xs font-bold ${pred.trend === 'UP' ? 'text-rose-400' : pred.trend === 'DOWN' ? 'text-emerald-400' : 'text-yellow-400'}`}>
-                      {pred.changePercent > 0 ? '+' : ''}{pred.changePercent.toFixed(0)}%
-                    </span>
-                  </div>
-                </div>
-                <div className="font-display font-bold text-base" style={{ color: 'var(--text-primary)' }}>
-                  {formatCurrency(pred.predictedAmount)}
-                </div>
-                <div className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>{pred.reason}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Expense List */}
-      <div className="glass-card overflow-hidden">
-        <div className="flex items-center justify-between p-5 border-b" style={{ borderColor: 'var(--border-color)' }}>
-          <h3 className="font-display font-semibold" style={{ color: 'var(--text-primary)' }}>All Expenses</h3>
-          <button id="add-expense-page-btn" onClick={() => setShowModal(true)} className="btn-primary">
-            <Plus size={16} /> Add Expense
-          </button>
-        </div>
-
-        {loading ? (
-          <div className="p-5 space-y-2">{[1,2,3,4].map(i => <div key={i} className="skeleton h-14 rounded-xl" />)}</div>
-        ) : expenses.length === 0 ? (
-          <div className="py-16 text-center">
-            <div className="text-4xl mb-2">🧾</div>
-            <p style={{ color: 'var(--text-muted)' }}>No expenses yet</p>
-          </div>
-        ) : (
-          <>
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Description</th>
-                  <th>Category</th>
-                  <th>Date</th>
-                  <th>Type</th>
-                  <th className="text-right">Amount</th>
-                </tr>
-              </thead>
-              <tbody>
-                {expenses.map((exp, i) => (
-                  <motion.tr key={exp.id}
-                    initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                    transition={{ delay: i * 0.03 }}>
-                    <td>
-                      <div className="font-medium text-sm" style={{ color: 'var(--text-primary)' }}>{exp.description}</div>
-                      {exp.paidForHousehold && <span className="badge badge-brand text-[10px]">Household</span>}
-                    </td>
-                    <td>
-                      <span className="text-sm capitalize" style={{ color: 'var(--text-secondary)' }}>
-                        {exp.category.replace('_', ' ').toLowerCase()}
-                      </span>
-                    </td>
-                    <td className="text-sm" style={{ color: 'var(--text-muted)' }}>{formatDate(exp.expenseDate)}</td>
-                    <td>
-                      <span className="badge badge-muted">{exp.expenseType.toLowerCase()}</span>
-                    </td>
-                    <td className="text-right font-semibold text-rose-500">{formatCurrency(exp.amount)}</td>
-                  </motion.tr>
-                ))}
-              </tbody>
-            </table>
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <div className="flex items-center justify-between p-4 border-t" style={{ borderColor: 'var(--border-color)' }}>
-                <button onClick={() => setPage(p => Math.max(0, p-1))} disabled={page === 0} className="btn-ghost disabled:opacity-40">← Prev</button>
-                <span className="text-sm" style={{ color: 'var(--text-muted)' }}>Page {page+1} of {totalPages}</span>
-                <button onClick={() => setPage(p => Math.min(totalPages-1, p+1))} disabled={page >= totalPages-1} className="btn-ghost disabled:opacity-40">Next →</button>
-              </div>
-            )}
-          </>
-        )}
       </div>
 
-      {showModal && (
-        <AddExpenseModal onClose={() => setShowModal(false)} onSuccess={() => { setShowModal(false); loadData() }} />
-      )}
+      <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-3 [&>*:nth-child(3)]:col-span-2 sm:[&>*:nth-child(3)]:col-span-1">
+        <Stat label="Spent" value={formatMoney(spent, currency)} />
+        <Stat label="Income" value={formatMoney(income, currency)} tone="positive" />
+        <Stat label="Net" value={formatMoney(fromMinor(toMinor(income) - toMinor(spent)), currency)} tone={income - spent >= 0 ? 'positive' : 'negative'} />
+      </div>
+
+      <Card className="overflow-hidden">
+        {groups.length ? groups.map(([date, items]) => (
+          <section key={date}>
+            <div className="flex items-center justify-between bg-surface-2 px-4 py-2 text-[12px] font-semibold uppercase tracking-wide text-ink-3">
+              <span>{relativeDay(date)}</span>
+              <span className="tabular-nums">{formatMoney(sumMoney(items.filter((r) => r.kind === 'expense'), (r) => (r as { e: Expense }).e.amount), currency)}</span>
+            </div>
+            <div className="divide-y divide-line">
+              {items.map((r) => r.kind === 'expense' ? <ExpenseRow key={r.e.id} e={r.e} showDate={false} /> : <IncomeRow key={r.i.id} i={r.i} />)}
+            </div>
+          </section>
+        )) : (
+          <EmptyState icon={<Receipt size={20} />} title="Nothing here" body="No transactions match this month and filter."
+            action={<Button size="sm" onClick={() => openAddExpense()}>Add expense</Button>} />
+        )}
+      </Card>
     </div>
   )
 }

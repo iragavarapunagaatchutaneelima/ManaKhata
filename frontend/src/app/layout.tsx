@@ -1,58 +1,61 @@
-import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
+import type { Metadata, Viewport } from 'next'
+import { Inter, Plus_Jakarta_Sans } from 'next/font/google'
 import './globals.css'
 import { ThemeProvider } from '@/components/ThemeProvider'
 import { Toaster } from 'react-hot-toast'
+import NativeBridge from '@/components/NativeBridge'
+import AppBoot from '@/components/AppBoot'
+import { DEFAULT_THEME, THEME_IDS } from '@/lib/themes'
 
-const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
+const inter = Inter({ subsets: ['latin'], variable: '--font-inter', display: 'swap' })
+const jakarta = Plus_Jakarta_Sans({ subsets: ['latin'], variable: '--font-jakarta', display: 'swap', weight: ['500', '600', '700', '800'] })
 
-export const metadata: Metadata = {
-  title: 'ManaKhata — Our Household Account',
-  description: 'AI-powered collaborative household financial operating system. Manage family finances, track expenses, reimbursements, assets, and get intelligent insights.',
-  keywords: 'household finance, family budget, expense tracker, reimbursement, AI financial advisor',
-  openGraph: {
-    title: 'ManaKhata — Our Household Account',
-    description: 'The financial brain of your household.',
-    type: 'website',
-  },
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
+  viewportFit: 'cover',
+  themeColor: '#0A0E1C',
 }
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export const metadata: Metadata = {
+  title: { default: 'Kinfold — the family money app', template: '%s · Kinfold' },
+  description: 'Kinfold brings your household’s money into one shared place: expenses, budgets, bills, splits, pocket money, goals and insights for the whole family.',
+  applicationName: 'Kinfold',
+  keywords: ['family budget', 'household expenses', 'expense sharing', 'split bills', 'pocket money', 'India', 'personal finance'],
+  openGraph: {
+    title: 'Kinfold — the family money app',
+    description: "Your family's money, folded into one place.",
+    type: 'website',
+    siteName: 'Kinfold',
+  },
+  manifest: '/manifest.json',
+  icons: { icon: '/icon-192x192.png', apple: '/icon-192x192.png' },
+}
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <head>
-        <link
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&display=swap"
-          rel="stylesheet"
-        />
-      </head>
-      <body className={`${inter.variable} antialiased`}>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
+    <html lang="en" suppressHydrationWarning className={`${inter.variable} ${jakarta.variable}`}>
+      <body>
+        <ThemeProvider attribute="data-theme" themes={THEME_IDS} defaultTheme={DEFAULT_THEME} enableSystem disableTransitionOnChange storageKey="kinfold.theme">
+          <NativeBridge />
+          <AppBoot />
           {children}
         </ThemeProvider>
         <Toaster
-          position="top-right"
+          position="top-center"
           toastOptions={{
-            duration: 4000,
+            duration: 3500,
             style: {
-              background: 'var(--bg-secondary)',
-              color: 'var(--text-primary)',
-              border: '1px solid var(--border-color)',
+              background: 'var(--surface)',
+              color: 'var(--ink)',
+              border: '1px solid var(--border)',
               borderRadius: '12px',
               fontSize: '14px',
-              fontWeight: '500',
+              boxShadow: 'var(--shadow-lg)',
             },
-            success: { iconTheme: { primary: '#10b981', secondary: 'white' } },
-            error:   { iconTheme: { primary: '#f43f5e', secondary: 'white' } },
+            success: { iconTheme: { primary: 'var(--positive)', secondary: 'var(--surface)' } },
+            error: { iconTheme: { primary: 'var(--negative)', secondary: 'var(--surface)' } },
           }}
         />
       </body>

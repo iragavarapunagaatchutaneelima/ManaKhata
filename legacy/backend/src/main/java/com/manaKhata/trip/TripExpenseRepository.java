@@ -1,0 +1,11 @@
+package com.manaKhata.trip;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+import java.util.List;
+
+@Repository
+public interface TripExpenseRepository extends JpaRepository<TripExpense, Long> {
+    List<TripExpense> findByTripIdOrderByExpenseDateDesc(Long tripId);
+}

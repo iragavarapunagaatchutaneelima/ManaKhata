@@ -1,202 +1,123 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { motion } from 'framer-motion'
-import { Plus, Check, Clock, X, RefreshCcw } from 'lucide-react'
-import api from '@/lib/api'
-import { useAuthStore } from '@/store/authStore'
-import { formatCurrency, formatDate, getReimbursementStatusBadge } from '@/hooks/useUtils'
-import type { Reimbursement } from '@/types'
-import toast from 'react-hot-toast'
+import { useMemo, useState } from 'react'
+import { Check, Plus, RefreshCcw, Undo2, X } from 'lucide-react'
+import { Avatar, Badge, Button, Card, EmptyState, Field, Modal, PageHeader, Segmented, Stat, confirmAction } from '@/components/ui'
+import { CategoryIcon } from '@/components/CategoryIcon'
+import { useHousehold } from '@/store/ledger'
+import { CATEGORIES, category } from '@/lib/categories'
+import { formatDate, formatMoney, parseMoney, sumMoney, today } from '@/lib/money'
+import type { ReimbursementStatus } from '@/lib/model'
+
+const TONE: Record<ReimbursementStatus, 'warning' | 'primary' | 'positive' | 'negative'> = { PENDING: 'warning', APPROVED: 'primary', SETTLED: 'positive', REJECTED: 'negative' }
+const LABEL: Record<ReimbursementStatus, string> = { PENDING: 'Waiting for approval', APPROVED: 'Approved — to be paid', SETTLED: 'Paid back', REJECTED: 'Declined' }
 
 export default function ReimbursementsPage() {
-  const { user } = useAuthStore()
-  const [reimbursements, setReimbursements] = useState<Reimbursement[]>([])
-  const [summary, setSummary] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
-  const [filter, setFilter] = useState<'all' | 'mine'>('all')
-  const [showForm, setShowForm] = useState(false)
-  const [form, setForm] = useState({ amount: '', description: '', category: '', notes: '', paidDate: new Date().toISOString().split('T')[0] })
+  const { data, userId, currency, isManager, memberName, firstName, mutate } = useHousehold()
+  const [filter, setFilter] = useState<'open' | 'SETTLED' | 'REJECTED' | 'all'>('open')
+  const [mine, setMine] = useState(!isManager)
+  const [open, setOpen] = useState(false)
 
-  useEffect(() => { loadData() }, [filter])
+  const view = useMemo(() => {
+    if (!data) return null
+    const list = data.reimbursements.filter((r) => (!mine || r.requested_by === userId)
+      && (filter === 'all' || (filter === 'open' ? r.status === 'PENDING' || r.status === 'APPROVED' : r.status === filter)))
+      .sort((a, b) => b.created_at.localeCompare(a.created_at))
+    const year = today().slice(0, 4)
+    return {
+      list,
+      pending: sumMoney(data.reimbursements.filter((r) => r.status === 'PENDING'), (r) => r.amount),
+      approved: sumMoney(data.reimbursements.filter((r) => r.status === 'APPROVED'), (r) => r.amount),
+      paidThisYear: sumMoney(data.reimbursements.filter((r) => r.status === 'SETTLED' && (r.settled_at ?? '').startsWith(year)), (r) => r.amount),
+    }
+  }, [data, filter, mine, userId])
 
-  const loadData = async () => {
-    setLoading(true)
-    try {
-      const [r, s] = await Promise.all([
-        api.getReimbursements(filter === 'mine' ? 'mine' : undefined),
-        api.getReimbursementSummary(),
-      ])
-      if (r.success) setReimbursements(r.data.content || [])
-      if (s.success) setSummary(s.data)
-    } finally { setLoading(false) }
-  }
+  if (!view) return null
 
-  const handleAction = async (id: number, action: 'approve' | 'settle' | 'reject') => {
-    try {
-      if (action === 'approve') await api.approveReimbursement(id)
-      else if (action === 'settle') await api.settleReimbursement(id)
-      else await api.rejectReimbursement(id)
-      toast.success(`Reimbursement ${action}d!`)
-      loadData()
-    } catch { toast.error(`Failed to ${action}`) }
-  }
+  return (
+    <div>
+      <PageHeader title="Reimbursements" subtitle="Paid for the household from your own pocket? Ask to be paid back."
+        actions={<Button icon={<Plus size={16} />} onClick={() => setOpen(true)}>Request money back</Button>} />
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    try {
-      await api.createReimbursement({ ...form, amount: parseFloat(form.amount) })
-      toast.success('Reimbursement request submitted! 🔄')
-      setShowForm(false)
-      setForm({ amount: '', description: '', category: '', notes: '', paidDate: new Date().toISOString().split('T')[0] })
-      loadData()
-    } catch { toast.error('Failed to submit') }
+      <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-3 [&>*:nth-child(3)]:col-span-2 sm:[&>*:nth-child(3)]:col-span-1">
+        <Stat label="Waiting for approval" value={formatMoney(view.pending, currency)} tone={view.pending ? 'saffron' : undefined} />
+        <Stat label="Approved, unpaid" value={formatMoney(view.approved, currency)} tone="primary" />
+        <Stat label="Paid back this year" value={formatMoney(view.paidThisYear, currency)} tone="positive" />
+      </div>
+
+      <div className="mb-3 flex flex-wrap items-center gap-2">
+        <Segmented value={filter} onChange={setFilter} options={[
+          { value: 'open', label: 'Open' }, { value: 'SETTLED', label: 'Paid' }, { value: 'REJECTED', label: 'Declined' }, { value: 'all', label: 'All' },
+        ]} />
+        <Segmented value={mine ? 'mine' : 'everyone'} onChange={(v) => setMine(v === 'mine')} options={[{ value: 'everyone', label: 'Everyone' }, { value: 'mine', label: 'Mine' }]} />
+      </div>
+
+      <Card className="divide-y divide-line overflow-hidden">
+        {view.list.length ? view.list.map((r) => (
+          <div key={r.id} className="flex flex-wrap items-center gap-3 px-4 py-3.5">
+            <CategoryIcon cat={r.category} />
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="font-semibold">{r.description}</span>
+                <Badge tone={TONE[r.status]}>{LABEL[r.status]}</Badge>
+              </div>
+              <div className="mt-0.5 flex items-center gap-1.5 text-[12.5px] text-ink-3">
+                <Avatar name={memberName(r.requested_by)} size={18} /> {firstName(r.requested_by)} paid on {formatDate(r.paid_date, 'long')} · {category(r.category).label}
+                {r.decided_by && <> · {r.status === 'REJECTED' ? 'declined' : 'approved'} by {firstName(r.decided_by)}</>}
+              </div>
+            </div>
+            <span className="font-semibold tabular-nums">{formatMoney(r.amount, currency)}</span>
+            <div className="flex w-full justify-end gap-1.5 sm:w-auto">
+              {isManager && r.status === 'PENDING' && <>
+                <Button size="sm" variant="secondary" icon={<X size={15} />} onClick={() => mutate((b) => b.decideReimbursement(r.id, 'REJECT'), 'Request declined')}>Decline</Button>
+                <Button size="sm" icon={<Check size={15} />} onClick={() => mutate((b) => b.decideReimbursement(r.id, 'APPROVE'), 'Approved')}>Approve</Button>
+              </>}
+              {isManager && r.status === 'APPROVED' && (
+                <Button size="sm" onClick={async () => {
+                  if (await confirmAction({ title: `Mark ${formatMoney(r.amount, currency)} as paid to ${firstName(r.requested_by)}?`, body: 'Do this after you have sent the money by UPI, bank transfer or cash.', confirmLabel: 'Mark paid' }))
+                    mutate((b) => b.decideReimbursement(r.id, 'SETTLE'), 'Marked as paid')
+                }}>Mark paid</Button>
+              )}
+              {r.requested_by === userId && r.status === 'PENDING' && (
+                <Button size="sm" variant="ghost" icon={<Undo2 size={15} />} onClick={() => mutate((b) => b.remove('reimbursements', r.id), 'Request withdrawn')}>Withdraw</Button>
+              )}
+            </div>
+          </div>
+        )) : <EmptyState icon={<RefreshCcw size={20} />} title="No requests here" body="When someone pays a household cost personally, they can request it back." />}
+      </Card>
+
+      <RequestForm open={open} onClose={() => setOpen(false)} />
+    </div>
+  )
+}
+
+function RequestForm({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const { currency, mutate } = useHousehold()
+  const [form, setForm] = useState({ amount: '', description: '', category: 'GROCERIES', date: today() })
+  const [error, setError] = useState<string | null>(null)
+
+  async function submit() {
+    const amount = parseMoney(form.amount)
+    if (!Number.isFinite(amount) || amount <= 0) return setError('Enter the amount you paid.')
+    if (!form.description.trim()) return setError('Say what it was for.')
+    const ok = await mutate((b) => b.insert('reimbursements', { amount, description: form.description.trim(), category: form.category, paid_date: form.date }), 'Request sent')
+    if (ok) { setForm({ amount: '', description: '', category: 'GROCERIES', date: today() }); setError(null); onClose() }
   }
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto">
-      {/* Summary Cards */}
-      {summary && (
-        <div className="grid grid-cols-3 gap-4">
-          {[
-            { icon: '⏳', label: 'Pending (Household)', value: formatCurrency(summary.totalPendingHousehold), color: 'gradient-gold' },
-            { icon: '👤', label: 'Owed to Me', value: formatCurrency(summary.totalPendingByMe), color: 'gradient-brand' },
-            { icon: '📋', label: 'Pending Count', value: summary.pendingCount, color: 'gradient-rose' },
-          ].map((s, i) => (
-            <motion.div key={s.label} className="glass-card p-5"
-              initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}>
-              <div className={`w-10 h-10 ${s.color} rounded-xl flex items-center justify-center text-xl mb-3`}>{s.icon}</div>
-              <div className="font-display font-bold text-xl" style={{ color: 'var(--text-primary)' }}>{s.value}</div>
-              <div className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>{s.label}</div>
-            </motion.div>
-          ))}
-        </div>
-      )}
-
-      {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div className="flex gap-2">
-          {['all', 'mine'].map(f => (
-            <button key={f} onClick={() => setFilter(f as any)}
-              className={`px-4 py-1.5 rounded-xl text-sm font-medium transition-all ${filter === f ? 'gradient-brand text-white shadow' : 'btn-ghost'}`}>
-              {f === 'all' ? '🏠 All' : '👤 Mine'}
-            </button>
-          ))}
-        </div>
-        <button id="add-reimb-btn" onClick={() => setShowForm(!showForm)} className="btn-primary">
-          <Plus size={16} /> New Request
-        </button>
+    <Modal open={open} onClose={onClose} title="Request money back" description="The household head or a parent will approve it."
+      footer={<><Button variant="secondary" onClick={onClose}>Cancel</Button><Button onClick={submit}>Send request</Button></>}>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field label={`Amount (${currency})`}><input className="field" inputMode="decimal" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} /></Field>
+        <Field label="Paid on"><input className="field" type="date" max={today()} value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} /></Field>
+        <Field label="What was it for?" className="sm:col-span-2"><input className="field" maxLength={200} placeholder="e.g. Paid the electricity bill" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></Field>
+        <Field label="Category" className="sm:col-span-2">
+          <select className="field" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })}>
+            {CATEGORIES.map((c) => <option key={c.key} value={c.key}>{c.label}</option>)}
+          </select>
+        </Field>
       </div>
-
-      {/* Quick Form */}
-      {showForm && (
-        <motion.form onSubmit={handleSubmit}
-          className="glass-card p-6"
-          initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
-          <h3 className="font-display font-semibold text-base mb-4" style={{ color: 'var(--text-primary)' }}>
-            New Reimbursement Request
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            <div>
-              <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>Amount (₹)</label>
-              <input id="reimb-amount" type="number" value={form.amount} onChange={e => setForm(f => ({...f, amount: e.target.value}))}
-                className="input-field" placeholder="2500" required />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>Category</label>
-              <input id="reimb-category" type="text" value={form.category} onChange={e => setForm(f => ({...f, category: e.target.value}))}
-                className="input-field" placeholder="e.g. AC Repair" />
-            </div>
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>Description</label>
-              <input id="reimb-desc" type="text" value={form.description} onChange={e => setForm(f => ({...f, description: e.target.value}))}
-                className="input-field" placeholder="What did you pay for?" required />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>Date Paid</label>
-              <input type="date" value={form.paidDate} onChange={e => setForm(f => ({...f, paidDate: e.target.value}))}
-                className="input-field" />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>Notes (optional)</label>
-              <input type="text" value={form.notes} onChange={e => setForm(f => ({...f, notes: e.target.value}))}
-                className="input-field" placeholder="Any additional context" />
-            </div>
-          </div>
-          <div className="flex gap-3">
-            <button type="button" onClick={() => setShowForm(false)} className="btn-ghost flex-1">Cancel</button>
-            <button id="reimb-submit" type="submit" className="btn-primary flex-1">Submit Request 🔄</button>
-          </div>
-        </motion.form>
-      )}
-
-      {/* Reimbursements List */}
-      <div className="glass-card overflow-hidden">
-        <div className="p-5 border-b" style={{ borderColor: 'var(--border-color)' }}>
-          <h3 className="font-display font-semibold" style={{ color: 'var(--text-primary)' }}>
-            Reimbursement Requests
-          </h3>
-        </div>
-        {loading ? (
-          <div className="p-5 space-y-3">
-            {[1,2,3].map(i => <div key={i} className="skeleton h-16 rounded-xl" />)}
-          </div>
-        ) : reimbursements.length === 0 ? (
-          <div className="py-16 text-center">
-            <div className="text-4xl mb-2">🔄</div>
-            <p style={{ color: 'var(--text-muted)' }}>No reimbursements found</p>
-          </div>
-        ) : (
-          <div className="divide-y" style={{ borderColor: 'var(--border-color)' }}>
-            {reimbursements.map((r, i) => {
-              const badge = getReimbursementStatusBadge(r.status)
-              return (
-                <motion.div key={r.id}
-                  className="flex items-center gap-4 p-4 hover:bg-brand-500/4 transition-colors"
-                  initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.04 }}>
-                  {/* Avatar */}
-                  <div className="w-10 h-10 rounded-full gradient-brand flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
-                    {r.payer?.fullName?.charAt(0)}
-                  </div>
-                  {/* Info */}
-                  <div className="flex-1 min-w-0">
-                    <div className="font-medium text-sm truncate" style={{ color: 'var(--text-primary)' }}>{r.description}</div>
-                    <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                      <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{r.payer?.fullName}</span>
-                      {r.category && <span className="text-xs badge badge-muted">{r.category}</span>}
-                      <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{formatDate(r.paidDate)}</span>
-                    </div>
-                  </div>
-                  {/* Amount + Status */}
-                  <div className="text-right flex-shrink-0">
-                    <div className="font-bold text-base" style={{ color: 'var(--text-primary)' }}>{formatCurrency(r.amount)}</div>
-                    <span className={`badge ${badge.className}`}>{badge.label}</span>
-                  </div>
-                  {/* Actions (househead) */}
-                  {user?.isHousehead && r.status === 'PENDING' && (
-                    <div className="flex gap-1 flex-shrink-0">
-                      <button id={`approve-${r.id}`} onClick={() => handleAction(r.id, 'approve')}
-                        className="p-2 rounded-lg bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 transition-colors" title="Approve">
-                        <Check size={14} />
-                      </button>
-                      <button id={`reject-${r.id}`} onClick={() => handleAction(r.id, 'reject')}
-                        className="p-2 rounded-lg bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 transition-colors" title="Reject">
-                        <X size={14} />
-                      </button>
-                    </div>
-                  )}
-                  {user?.isHousehead && r.status === 'APPROVED' && (
-                    <button id={`settle-${r.id}`} onClick={() => handleAction(r.id, 'settle')}
-                      className="p-2 rounded-lg bg-brand-500/10 text-brand-400 hover:bg-brand-500/20 transition-colors flex-shrink-0" title="Settle">
-                      <RefreshCcw size={14} />
-                    </button>
-                  )}
-                </motion.div>
-              )
-            })}
-          </div>
-        )}
-      </div>
-    </div>
+      {error && <p className="mt-3 rounded-[10px] bg-negative-soft px-3 py-2 text-sm text-negative">{error}</p>}
+    </Modal>
   )
 }

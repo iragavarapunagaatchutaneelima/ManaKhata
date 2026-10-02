@@ -1,246 +1,166 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { motion } from 'framer-motion'
-import { Plus, Fuel, Wrench } from 'lucide-react'
-import api from '@/lib/api'
-import { formatCurrency, formatDate } from '@/hooks/useUtils'
-import type { Vehicle } from '@/types'
-import toast from 'react-hot-toast'
+import { useMemo, useState } from 'react'
+import { Bike, Car, ChevronDown, Fuel, Plus, Trash2, Wrench } from 'lucide-react'
+import { Badge, Button, Card, EmptyState, Field, IconButton, Modal, PageHeader, confirmAction, cx } from '@/components/ui'
+import { useHousehold } from '@/store/ledger'
+import { formatDate, formatMoney, parseMoney, today } from '@/lib/money'
+import { vehicleStats } from '@/lib/finance'
+import type { Vehicle, VehicleExpenseType, VehicleType } from '@/lib/model'
 
-const vehicleEmoji: Record<string, string> = {
-  BIKE: '🏍️', SCOOTY: '🛵', CAR: '🚗', AUTO: '🛺', TRUCK: '🚛', CYCLE: '🚲', OTHER: '🚗'
-}
+const TYPES: VehicleType[] = ['CAR', 'BIKE', 'SCOOTER', 'EV', 'CYCLE', 'OTHER']
+const EXPENSE_TYPES: { value: VehicleExpenseType; label: string }[] = [
+  { value: 'FUEL', label: 'Fuel / charging' }, { value: 'SERVICE', label: 'Service' }, { value: 'REPAIR', label: 'Repair' },
+  { value: 'INSURANCE', label: 'Insurance' }, { value: 'TYRES', label: 'Tyres' }, { value: 'PUC', label: 'PUC' },
+  { value: 'PARKING_TOLL', label: 'Parking / toll' }, { value: 'WASH', label: 'Wash' }, { value: 'OTHER', label: 'Other' },
+]
 
 export default function VehiclesPage() {
-  const [vehicles, setVehicles] = useState<Vehicle[]>([])
-  const [selected, setSelected] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
-  const [showAdd, setShowAdd] = useState(false)
-  const [showExpForm, setShowExpForm] = useState(false)
-  const [form, setForm] = useState({ name: '', vehicleType: 'CAR', make: '', model: '', year: '', fuelType: 'Petrol', mileageKmpl: '', registrationNumber: '', isShared: false })
-  const [expForm, setExpForm] = useState({ amount: '', description: '', expenseType: 'FUEL', fuelLiters: '', notes: '' })
+  const { data, currency, firstName, mutate } = useHousehold()
+  const [creating, setCreating] = useState(false)
+  const [logging, setLogging] = useState<Vehicle | null>(null)
+  const [openId, setOpenId] = useState<string | null>(null)
 
-  useEffect(() => { loadVehicles() }, [])
+  const vehicles = useMemo(() => (data?.vehicles ?? []).map((v) => {
+    const expenses = (data?.vehicleExpenses ?? []).filter((e) => e.vehicle_id === v.id).sort((a, b) => b.expense_date.localeCompare(a.expense_date))
+    return { v, expenses, stats: vehicleStats(expenses) }
+  }), [data])
 
-  const loadVehicles = async () => {
-    setLoading(true)
-    try {
-      const res = await api.getVehicles()
-      if (res.success) setVehicles(res.data || [])
-    } finally { setLoading(false) }
-  }
+  if (!data) return null
 
-  const loadDetail = async (id: number) => {
-    const res = await api.getVehicleDetail(id)
-    if (res.success) setSelected(res.data)
-  }
+  return (
+    <div>
+      <PageHeader title="Vehicles" subtitle="Fuel, service and running costs — with real mileage from your odometer readings."
+        actions={<Button icon={<Plus size={16} />} onClick={() => setCreating(true)}>Add vehicle</Button>} />
 
-  const handleAddVehicle = async (e: React.FormEvent) => {
-    e.preventDefault()
-    try {
-      await api.addVehicle({ ...form, year: form.year ? parseInt(form.year) : undefined, mileageKmpl: form.mileageKmpl ? parseFloat(form.mileageKmpl) : undefined })
-      toast.success('Vehicle added! 🚗')
-      setShowAdd(false)
-      loadVehicles()
-    } catch { toast.error('Failed to add vehicle') }
-  }
+      {vehicles.length ? (
+        <div className="grid gap-4 lg:grid-cols-2">
+          {vehicles.map(({ v, expenses, stats }) => {
+            const Icon = v.vehicle_type === 'CAR' || v.vehicle_type === 'EV' ? Car : Bike
+            const open = openId === v.id
+            return (
+              <Card key={v.id} className="overflow-hidden">
+                <div className="flex items-start gap-3 p-5">
+                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[12px] bg-primary-soft text-primary"><Icon size={22} /></span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2"><h2 className="font-semibold">{v.name}</h2><Badge>{v.vehicle_type.toLowerCase()}</Badge>{v.is_shared && <Badge tone="primary">shared</Badge>}</div>
+                    <p className="text-[13px] text-ink-3">{[v.make, v.model, v.year].filter(Boolean).join(' · ')}{v.registration_number && ` · ${v.registration_number}`}{v.owner_id && ` · ${firstName(v.owner_id)}`}</p>
+                  </div>
+                  <IconButton label="Delete vehicle" onClick={async () => {
+                    if (await confirmAction({ title: `Remove ${v.name}?`, body: 'Its fuel and service log is deleted too.', confirmLabel: 'Remove', danger: true })) mutate((b) => b.remove('vehicles', v.id), 'Vehicle removed')
+                  }}><Trash2 size={16} /></IconButton>
+                </div>
+                <div className="grid grid-cols-2 gap-2 px-5 sm:grid-cols-4">
+                  {[
+                    ['Total spent', formatMoney(stats.total, currency)],
+                    ['Fuel', formatMoney(stats.fuel, currency)],
+                    ['Mileage', stats.kmPerLitre ? `${stats.kmPerLitre.toFixed(1)} km/l` : '—'],
+                    ['Cost per km', stats.costPerKm ? formatMoney(stats.costPerKm, currency, { decimals: true }) : '—'],
+                  ].map(([label, value]) => (
+                    <div key={label} className="rounded-[10px] bg-surface-2 px-3 py-2"><div className="text-[11.5px] text-ink-3">{label}</div><div className="font-semibold tabular-nums">{value}</div></div>
+                  ))}
+                </div>
+                <p className="px-5 pt-2 text-[12px] text-ink-3">
+                  {stats.lastOdometer ? `Odometer ${stats.lastOdometer.toLocaleString('en-IN')} km. ` : ''}Mileage needs two fuel fills with odometer and litres.
+                </p>
+                <div className="flex gap-2 px-5 py-4">
+                  <Button size="sm" icon={<Fuel size={15} />} onClick={() => setLogging(v)}>Log expense</Button>
+                  <Button size="sm" variant="ghost" icon={<ChevronDown size={15} className={cx('transition', open && 'rotate-180')} />} onClick={() => setOpenId(open ? null : v.id)}>{expenses.length} entries</Button>
+                </div>
+                {open && (
+                  <ul className="divide-y divide-line border-t border-line">
+                    {expenses.map((e) => (
+                      <li key={e.id} className="flex items-center gap-3 px-5 py-2.5 text-sm">
+                        {e.expense_type === 'FUEL' ? <Fuel size={15} className="text-ink-3" /> : <Wrench size={15} className="text-ink-3" />}
+                        <span className="min-w-0 flex-1 truncate">
+                          {EXPENSE_TYPES.find((t) => t.value === e.expense_type)?.label}
+                          <span className="text-ink-3"> · {formatDate(e.expense_date)}{e.odometer_km != null && ` · ${e.odometer_km.toLocaleString('en-IN')} km`}{e.litres && ` · ${e.litres} L`}</span>
+                        </span>
+                        <span className="tabular-nums">{formatMoney(e.amount, currency)}</span>
+                        <IconButton label="Delete entry" className="h-7 w-7" onClick={() => mutate((b) => b.remove('vehicleExpenses', e.id))}><Trash2 size={14} /></IconButton>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </Card>
+            )
+          })}
+        </div>
+      ) : (
+        <Card><EmptyState icon={<Car size={20} />} title="No vehicles yet" body="Add your car or two-wheeler to track fuel, service costs and mileage." action={<Button onClick={() => setCreating(true)}>Add vehicle</Button>} /></Card>
+      )}
 
-  const handleAddExpense = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!selected) return
-    try {
-      await api.addVehicleExpense(selected.vehicle.id, { ...expForm, amount: parseFloat(expForm.amount), fuelLiters: expForm.fuelLiters ? parseFloat(expForm.fuelLiters) : undefined })
-      toast.success('Expense logged! ⛽')
-      setShowExpForm(false)
-      loadDetail(selected.vehicle.id)
-    } catch { toast.error('Failed to log expense') }
+      <VehicleForm open={creating} onClose={() => setCreating(false)} />
+      <VehicleExpenseForm vehicle={logging} onClose={() => setLogging(null)} />
+    </div>
+  )
+}
+
+function VehicleForm({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const { members, userId, mutate } = useHousehold()
+  const blank = { name: '', type: 'CAR' as VehicleType, make: '', model: '', year: '', reg: '', fuel: 'Petrol', owner: userId, shared: true }
+  const [form, setForm] = useState(blank)
+  const [error, setError] = useState<string | null>(null)
+
+  async function save() {
+    if (!form.name.trim()) return setError('Give it a name, e.g. “Family car”.')
+    const year = form.year ? Number(form.year) : null
+    if (year !== null && !(year >= 1950 && year <= 2100)) return setError('Enter a valid year.')
+    const ok = await mutate((b) => b.insert('vehicles', {
+      name: form.name.trim(), vehicle_type: form.type, make: form.make || null, model: form.model || null, year,
+      registration_number: form.reg.toUpperCase() || null, fuel_type: form.fuel || null, owner_id: form.owner || null, is_shared: form.shared,
+    }), 'Vehicle added')
+    if (ok) { setForm(blank); setError(null); onClose() }
   }
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="font-display font-bold text-xl" style={{ color: 'var(--text-primary)' }}>Vehicles & Assets</h2>
-          <p className="text-sm mt-0.5" style={{ color: 'var(--text-muted)' }}>Track fuel, maintenance, and contributions</p>
-        </div>
-        <button id="add-vehicle-btn" onClick={() => setShowAdd(!showAdd)} className="btn-primary"><Plus size={16} /> Add Vehicle</button>
+    <Modal open={open} onClose={onClose} title="Add vehicle" footer={<><Button variant="secondary" onClick={onClose}>Cancel</Button><Button onClick={save}>Add</Button></>}>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field label="Name"><input className="field" maxLength={80} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></Field>
+        <Field label="Type"><select className="field" value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value as VehicleType })}>{TYPES.map((t) => <option key={t} value={t}>{t.charAt(0) + t.slice(1).toLowerCase()}</option>)}</select></Field>
+        <Field label="Make"><input className="field" placeholder="Hyundai" value={form.make} onChange={(e) => setForm({ ...form, make: e.target.value })} /></Field>
+        <Field label="Model"><input className="field" placeholder="Creta" value={form.model} onChange={(e) => setForm({ ...form, model: e.target.value })} /></Field>
+        <Field label="Year"><input className="field" inputMode="numeric" value={form.year} onChange={(e) => setForm({ ...form, year: e.target.value })} /></Field>
+        <Field label="Registration no."><input className="field uppercase" value={form.reg} onChange={(e) => setForm({ ...form, reg: e.target.value })} /></Field>
+        <Field label="Fuel"><select className="field" value={form.fuel} onChange={(e) => setForm({ ...form, fuel: e.target.value })}>{['Petrol', 'Diesel', 'CNG', 'Electric', 'Hybrid'].map((f) => <option key={f}>{f}</option>)}</select></Field>
+        <Field label="Main user"><select className="field" value={form.owner} onChange={(e) => setForm({ ...form, owner: e.target.value })}>{members.map((m) => <option key={m.user_id} value={m.user_id}>{m.full_name}</option>)}</select></Field>
+        <label className="flex items-center gap-2 text-sm text-ink-2 sm:col-span-2"><input type="checkbox" className="h-4 w-4 accent-[var(--primary)]" checked={form.shared} onChange={(e) => setForm({ ...form, shared: e.target.checked })} />Shared by the family</label>
       </div>
+      {error && <p className="mt-3 rounded-[10px] bg-negative-soft px-3 py-2 text-sm text-negative">{error}</p>}
+    </Modal>
+  )
+}
 
-      {/* Add Vehicle Form */}
-      {showAdd && (
-        <motion.form onSubmit={handleAddVehicle} className="glass-card p-6"
-          initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
-          <h3 className="font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>Add Vehicle</h3>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            {[
-              { id:'v-name', label:'Name', key:'name', placeholder:"Father's Honda Activa" },
-              { id:'v-reg', label:'Reg. No.', key:'registrationNumber', placeholder:"DL-3C-AB-1234" },
-              { id:'v-make', label:'Make', key:'make', placeholder:"Honda" },
-              { id:'v-model', label:'Model', key:'model', placeholder:"Activa 6G" },
-              { id:'v-year', label:'Year', key:'year', placeholder:"2021", type:'number' },
-              { id:'v-mileage', label:'Mileage (kmpl)', key:'mileageKmpl', placeholder:"45", type:'number' },
-            ].map(f => (
-              <div key={f.key}>
-                <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>{f.label}</label>
-                <input id={f.id} type={f.type || 'text'} value={(form as any)[f.key]}
-                  onChange={e => setForm(fr => ({...fr, [f.key]: e.target.value}))}
-                  className="input-field" placeholder={f.placeholder} />
-              </div>
-            ))}
-            <div>
-              <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>Type</label>
-              <select id="v-type" value={form.vehicleType} onChange={e => setForm(f => ({...f, vehicleType: e.target.value}))} className="input-field">
-                {['BIKE','SCOOTY','CAR','AUTO','TRUCK','CYCLE','OTHER'].map(t => <option key={t}>{t}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>Fuel Type</label>
-              <select id="v-fuel" value={form.fuelType} onChange={e => setForm(f => ({...f, fuelType: e.target.value}))} className="input-field">
-                {['Petrol','Diesel','CNG','Electric','Hybrid'].map(t => <option key={t}>{t}</option>)}
-              </select>
-            </div>
-            <div className="flex items-center gap-2 col-span-full">
-              <input id="v-shared" type="checkbox" checked={form.isShared} onChange={e => setForm(f => ({...f, isShared: e.target.checked}))} className="w-4 h-4 accent-indigo-500" />
-              <label htmlFor="v-shared" className="text-sm" style={{ color: 'var(--text-secondary)' }}>Shared with household</label>
-            </div>
-          </div>
-          <div className="flex gap-3 mt-4">
-            <button type="button" onClick={() => setShowAdd(false)} className="btn-ghost flex-1">Cancel</button>
-            <button id="vehicle-submit" type="submit" className="btn-primary flex-1">Add Vehicle 🚗</button>
-          </div>
-        </motion.form>
-      )}
+function VehicleExpenseForm({ vehicle, onClose }: { vehicle: Vehicle | null; onClose: () => void }) {
+  const { currency, mutate } = useHousehold()
+  const [form, setForm] = useState({ type: 'FUEL' as VehicleExpenseType, amount: '', odometer: '', litres: '', date: today(), notes: '' })
+  const [error, setError] = useState<string | null>(null)
+  const [key, setKey] = useState<string | null>(null)
+  if ((vehicle?.id ?? null) !== key) { setKey(vehicle?.id ?? null); setForm({ type: 'FUEL', amount: '', odometer: '', litres: '', date: today(), notes: '' }); setError(null) }
 
-      {/* Vehicle Grid */}
-      {loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {[1,2,3].map(i => <div key={i} className="skeleton h-48 rounded-2xl" />)}
-        </div>
-      ) : vehicles.length === 0 ? (
-        <div className="glass-card py-20 text-center">
-          <div className="text-5xl mb-3">🚗</div>
-          <p style={{ color: 'var(--text-muted)' }}>No vehicles added yet</p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {vehicles.map((v, i) => (
-            <motion.div key={v.id} className="glass-card p-5 cursor-pointer"
-              onClick={() => { loadDetail(v.id); }}
-              initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.06 }}
-              whileHover={{ y: -3 }}>
-              <div className="flex items-start justify-between mb-3">
-                <div className="text-4xl">{vehicleEmoji[v.vehicleType] || '🚗'}</div>
-                {v.isShared && <span className="badge badge-brand">Shared</span>}
-              </div>
-              <h4 className="font-display font-semibold text-base mb-1" style={{ color: 'var(--text-primary)' }}>{v.name}</h4>
-              <p className="text-xs mb-3" style={{ color: 'var(--text-muted)' }}>{v.make} {v.model} {v.year && `· ${v.year}`}</p>
-              <div className="grid grid-cols-2 gap-2">
-                <div className="p-2 rounded-xl text-center" style={{ background: 'var(--bg-primary)' }}>
-                  <Fuel size={14} className="mx-auto mb-1 text-rose-400" />
-                  <div className="font-bold text-sm text-rose-400">{formatCurrency(v.totalFuelCost)}</div>
-                  <div className="text-[10px]" style={{ color: 'var(--text-muted)' }}>Fuel</div>
-                </div>
-                <div className="p-2 rounded-xl text-center" style={{ background: 'var(--bg-primary)' }}>
-                  <Wrench size={14} className="mx-auto mb-1 text-brand-400" />
-                  <div className="font-bold text-sm text-brand-400">{formatCurrency(v.totalMaintenanceCost)}</div>
-                  <div className="text-[10px]" style={{ color: 'var(--text-muted)' }}>Maintenance</div>
-                </div>
-              </div>
-              {v.registrationNumber && (
-                <p className="text-xs mt-3 text-center font-mono" style={{ color: 'var(--text-muted)' }}>{v.registrationNumber}</p>
-              )}
-            </motion.div>
-          ))}
-        </div>
-      )}
+  async function save() {
+    if (!vehicle) return
+    const amount = parseMoney(form.amount)
+    if (!Number.isFinite(amount) || amount <= 0) return setError('Enter an amount above zero.')
+    const odometer = form.odometer ? Number(form.odometer) : null
+    const litres = form.litres ? Number(form.litres) : null
+    if (odometer !== null && !(odometer >= 0)) return setError('Odometer must be a positive number.')
+    if (litres !== null && !(litres > 0)) return setError('Litres must be above zero.')
+    const ok = await mutate((b) => b.insert('vehicleExpenses', { vehicle_id: vehicle.id, expense_type: form.type, amount, odometer_km: odometer, litres, expense_date: form.date, notes: form.notes || null }), 'Logged')
+    if (ok) onClose()
+  }
 
-      {/* Vehicle Detail Drawer */}
-      {selected && (
-        <div className="fixed inset-0 bg-black/60 z-40 flex items-center justify-end" onClick={() => setSelected(null)}>
-          <motion.div
-            className="w-full max-w-md h-full overflow-auto"
-            style={{ background: 'var(--bg-secondary)', borderLeft: '1px solid var(--border-color)' }}
-            initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }}
-            onClick={e => e.stopPropagation()}
-          >
-            <div className="p-6">
-              <div className="flex items-start justify-between mb-4">
-                <div>
-                  <div className="text-4xl mb-2">{vehicleEmoji[selected.vehicle.vehicleType] || '🚗'}</div>
-                  <h3 className="font-display font-bold text-xl" style={{ color: 'var(--text-primary)' }}>{selected.vehicle.name}</h3>
-                  <p className="text-sm" style={{ color: 'var(--text-muted)' }}>{selected.vehicle.make} {selected.vehicle.model}</p>
-                </div>
-                <button onClick={() => setSelected(null)} className="btn-ghost p-2">✕</button>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3 mb-4">
-                <div className="p-4 rounded-xl gradient-rose text-white text-center">
-                  <div className="font-bold text-xl">{formatCurrency(selected.totalFuelCost)}</div>
-                  <div className="text-xs opacity-80 mt-0.5">Total Fuel</div>
-                </div>
-                <div className="p-4 rounded-xl gradient-brand text-white text-center">
-                  <div className="font-bold text-xl">{formatCurrency(selected.totalMaintenanceCost)}</div>
-                  <div className="text-xs opacity-80 mt-0.5">Maintenance</div>
-                </div>
-              </div>
-
-              <button id="log-expense-btn" onClick={() => setShowExpForm(!showExpForm)} className="btn-primary w-full mb-4">
-                <Plus size={16} /> Log Expense
-              </button>
-
-              {showExpForm && (
-                <form onSubmit={handleAddExpense} className="glass-card p-4 mb-4 space-y-3">
-                  <input id="vexp-amount" type="number" value={expForm.amount} onChange={e => setExpForm(f => ({...f, amount: e.target.value}))}
-                    className="input-field" placeholder="Amount (₹)" required />
-                  <input id="vexp-desc" type="text" value={expForm.description} onChange={e => setExpForm(f => ({...f, description: e.target.value}))}
-                    className="input-field" placeholder="Description" required />
-                  <select id="vexp-type" value={expForm.expenseType} onChange={e => setExpForm(f => ({...f, expenseType: e.target.value}))} className="input-field">
-                    {['FUEL','MAINTENANCE','INSURANCE','REPAIR','SERVICE','PUC','WASHING','OTHER'].map(t => <option key={t}>{t}</option>)}
-                  </select>
-                  {expForm.expenseType === 'FUEL' && (
-                    <input id="vexp-liters" type="number" value={expForm.fuelLiters} onChange={e => setExpForm(f => ({...f, fuelLiters: e.target.value}))}
-                      className="input-field" placeholder="Fuel liters" />
-                  )}
-                  <button id="vexp-submit" type="submit" className="btn-primary w-full">Log Expense ⛽</button>
-                </form>
-              )}
-
-              {/* Contribution breakdown */}
-              {selected.contributionBreakdown?.length > 0 && (
-                <div>
-                  <h4 className="font-semibold text-sm mb-3" style={{ color: 'var(--text-primary)' }}>Contributions</h4>
-                  {selected.contributionBreakdown.map((c: any[]) => (
-                    <div key={c[0]} className="flex items-center justify-between py-2">
-                      <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>{c[1]}</span>
-                      <span className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>{formatCurrency(c[2])}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Recent expenses */}
-              <h4 className="font-semibold text-sm mt-4 mb-3" style={{ color: 'var(--text-primary)' }}>Recent Expenses</h4>
-              <div className="space-y-2">
-                {(selected.expenses || []).slice(0, 8).map((exp: any) => (
-                  <div key={exp.id} className="flex items-center justify-between p-3 rounded-xl"
-                    style={{ background: 'var(--bg-primary)' }}>
-                    <div>
-                      <div className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{exp.description}</div>
-                      <div className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                        {exp.expenseType} · {exp.contributor?.fullName}
-                      </div>
-                    </div>
-                    <span className="font-semibold text-sm text-rose-400">{formatCurrency(exp.amount)}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </motion.div>
-        </div>
-      )}
-    </div>
+  return (
+    <Modal open={!!vehicle} onClose={onClose} title={`Log expense · ${vehicle?.name ?? ''}`} footer={<><Button variant="secondary" onClick={onClose}>Cancel</Button><Button onClick={save}>Save</Button></>}>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field label="Type"><select className="field" value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value as VehicleExpenseType })}>{EXPENSE_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}</select></Field>
+        <Field label={`Amount (${currency})`}><input className="field" inputMode="decimal" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} /></Field>
+        <Field label="Odometer (km)" hint="Optional, but needed for mileage"><input className="field" inputMode="numeric" value={form.odometer} onChange={(e) => setForm({ ...form, odometer: e.target.value })} /></Field>
+        {form.type === 'FUEL' && <Field label="Litres" hint="Fill the tank fully for accurate km/l"><input className="field" inputMode="decimal" value={form.litres} onChange={(e) => setForm({ ...form, litres: e.target.value })} /></Field>}
+        <Field label="Date"><input className="field" type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} /></Field>
+        <Field label="Notes" className="sm:col-span-2"><input className="field" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} /></Field>
+      </div>
+      {error && <p className="mt-3 rounded-[10px] bg-negative-soft px-3 py-2 text-sm text-negative">{error}</p>}
+    </Modal>
   )
 }

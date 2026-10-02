@@ -13,6 +13,8 @@ __pycache__/
 *.py[cod]
 *.class
 *.jar
+# ...but the Gradle wrapper must be committed for ./gradlew to work
+!**/gradle/wrapper/gradle-wrapper.jar
 
 # Test and coverage output
 coverage/
@@ -45,4 +47,13 @@ maven/
 maven.zip
 
 # Runtime-generated data
-backend/backups/
+legacy/backend/backups/
+
+# Local crash dumps / scratch files
+hs_err_pid*.log
+replay_pid*.log
+scratch_*.txt
+legacy/backend/logs/
+*.tsbuildinfo
+frontend/vercel-login-check.png
+legacy/backend/fix_entities.py

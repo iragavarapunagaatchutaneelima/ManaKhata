@@ -1,195 +1,186 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { motion } from 'framer-motion'
-import { Plus, Trash2 } from 'lucide-react'
-import api from '@/lib/api'
-import { useAuthStore } from '@/store/authStore'
-import { formatCurrency, getMonthName, useCategoryIcon } from '@/hooks/useUtils'
-import type { Budget, ExpenseCategory } from '@/types'
-import toast from 'react-hot-toast'
+import { useMemo, useState } from 'react'
+import { PiggyBank, Plus, Sparkles, Trash2 } from 'lucide-react'
+import { Badge, Button, Card, CardHeader, EmptyState, Field, IconButton, Modal, PageHeader, Progress, Segmented, Stat, confirmAction } from '@/components/ui'
+import { CategoryIcon } from '@/components/CategoryIcon'
+import { MonthPicker } from '@/components/MonthPicker'
+import { useHousehold } from '@/store/ledger'
+import { CATEGORIES, category } from '@/lib/categories'
+import { addMonths, formatMoney, monthKey, parseMoney, sumMoney, today } from '@/lib/money'
+import { budgetProgress, householdSpend, inMonth } from '@/lib/finance'
+import type { Budget } from '@/lib/model'
 
-const categories: ExpenseCategory[] = [
-  'FOOD','GROCERIES','PETROL','TRAVEL','RENT','ELECTRICITY','INTERNET',
-  'MEDICAL','SHOPPING','EDUCATION','ENTERTAINMENT','INVESTMENT','SAVINGS',
-  'REPAIRS','MAINTENANCE','EMERGENCY','VEHICLE','UTILITIES','OTHER'
-]
+export default function BudgetsPage() {
+  const { data, currency, userId, isManager, memberName, mutate } = useHousehold()
+  const [month, setMonth] = useState(monthKey(new Date()))
+  const [editing, setEditing] = useState<Budget | 'new' | null>(null)
 
-export default function BudgetPage() {
-  const { user } = useAuthStore()
-  const [budgets, setBudgets] = useState<Budget[]>([])
-  const [householdBudgets, setHouseholdBudgets] = useState<Budget[]>([])
-  const [loading, setLoading] = useState(true)
-  const [showForm, setShowForm] = useState(false)
-  const [form, setForm] = useState({
-    category: 'GROCERIES' as ExpenseCategory,
-    monthlyLimit: '',
-    budgetType: 'PERSONAL',
-    alertAtPercent: '80',
-  })
+  const view = useMemo(() => {
+    if (!data) return null
+    const t = today()
+    const mine = data.budgets.filter((b) => !b.user_id || b.user_id === userId)
+    const progress = mine.map((b) => budgetProgress(b, data.expenses, month, t)).sort((a, b) => b.percent - a.percent)
+    const household = progress.filter((p) => !p.budget.user_id)
+    const budgetedCats = new Set(household.map((p) => p.budget.category))
+    const unbudgeted = sumMoney(data.expenses.filter((e) => e.visibility === 'HOUSEHOLD' && inMonth(e.expense_date, month) && !budgetedCats.has(e.category)), (e) => e.amount)
+    // Suggest limits from the last 3 complete months for categories without a budget.
+    const current = monthKey(t)
+    const months = [1, 2, 3].map((i) => addMonths(current, -i))
+    const suggestions = CATEGORIES
+      .filter((c) => !budgetedCats.has(c.key))
+      .map((c) => {
+        const avg = months.reduce((s, k) => s + sumMoney(data.expenses.filter((e) => e.visibility === 'HOUSEHOLD' && e.category === c.key && inMonth(e.expense_date, k)), (e) => e.amount), 0) / 3
+        return { category: c.key, avg, limit: Math.ceil((avg * 1.05) / 500) * 500 }
+      })
+      .filter((s) => s.avg >= 500)
+      .sort((a, b) => b.avg - a.avg)
+      .slice(0, 4)
+    return {
+      progress,
+      totalLimit: sumMoney(household, (p) => p.budget.monthly_limit),
+      totalSpent: sumMoney(household, (p) => p.spent),
+      unbudgeted,
+      overall: householdSpend(data.expenses, month),
+      suggestions,
+    }
+  }, [data, month, userId])
 
-  const now = new Date()
+  if (!view) return null
 
-  useEffect(() => { loadBudgets() }, [])
+  return (
+    <div>
+      <PageHeader title="Budgets" subtitle="Monthly limits per category. Kinfold warns you when you cross your alert level."
+        actions={<><MonthPicker value={month} onChange={setMonth} /><Button icon={<Plus size={16} />} onClick={() => setEditing('new')}>New budget</Button></>} />
 
-  const loadBudgets = async () => {
-    setLoading(true)
-    const [p, h] = await Promise.all([api.getMyBudgets(), api.getHouseholdBudgets()])
-    if (p.success) setBudgets(p.data || [])
-    if (h.success) setHouseholdBudgets(h.data || [])
-    setLoading(false)
-  }
-
-  const handleCreate = async (e: React.FormEvent) => {
-    e.preventDefault()
-    try {
-      await api.createBudget({ ...form, monthlyLimit: parseFloat(form.monthlyLimit), alertAtPercent: parseInt(form.alertAtPercent) })
-      toast.success('Budget created! 📊')
-      setShowForm(false)
-      setForm({ category: 'GROCERIES', monthlyLimit: '', budgetType: 'PERSONAL', alertAtPercent: '80' })
-      loadBudgets()
-    } catch { toast.error('Failed to create budget') }
-  }
-
-  const BudgetCard = ({ budget }: { budget: Budget }) => {
-    const pct = Math.min(100, (budget.currentSpent / budget.monthlyLimit) * 100)
-    const overBudget = pct >= 100
-    const nearLimit = pct >= budget.alertAtPercent
-    const barColor = overBudget ? '#f43f5e' : nearLimit ? '#f59e0b' : '#10b981'
-    const remaining = Math.max(0, budget.monthlyLimit - budget.currentSpent)
-
-    return (
-      <div className="glass-card p-5">
-        <div className="flex items-start justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <span className="text-2xl">{useCategoryIcon(budget.category)}</span>
-            <div>
-              <div className="font-semibold text-sm capitalize" style={{ color: 'var(--text-primary)' }}>
-                {budget.category.replace('_', ' ').toLowerCase()}
-              </div>
-              <span className={`badge ${budget.budgetType === 'HOUSEHOLD' ? 'badge-brand' : 'badge-muted'}`}>
-                {budget.budgetType.toLowerCase()}
-              </span>
-            </div>
-          </div>
-          {overBudget && <span className="badge badge-rose">Over Budget!</span>}
-        </div>
-
-        <div className="flex justify-between text-sm mb-2">
-          <span style={{ color: 'var(--text-muted)' }}>Spent</span>
-          <span className="font-semibold" style={{ color: overBudget ? '#f43f5e' : 'var(--text-primary)' }}>
-            {formatCurrency(budget.currentSpent)} / {formatCurrency(budget.monthlyLimit)}
-          </span>
-        </div>
-
-        <div className="progress-bar mb-2">
-          <motion.div
-            className="progress-fill"
-            style={{ background: barColor, width: `${pct}%` }}
-            initial={{ width: 0 }}
-            animate={{ width: `${pct}%` }}
-            transition={{ duration: 0.8 }}
-          />
-        </div>
-
-        <div className="flex justify-between text-xs">
-          <span style={{ color: 'var(--text-muted)' }}>{pct.toFixed(0)}% used</span>
-          <span className="font-semibold text-emerald-400">
-            {formatCurrency(remaining)} left
-          </span>
-        </div>
+      <div className="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <Stat label="Household budgets" value={formatMoney(view.totalLimit, currency)} hint={`${view.progress.filter((p) => !p.budget.user_id).length} categories`} />
+        <Stat label="Spent against them" value={formatMoney(view.totalSpent, currency)} tone={view.totalSpent > view.totalLimit ? 'negative' : undefined}
+          hint={view.totalLimit > 0 ? `${((view.totalSpent / view.totalLimit) * 100).toFixed(0)}% used` : undefined} />
+        <Stat label="Left to spend" value={formatMoney(Math.max(0, view.totalLimit - view.totalSpent), currency)} tone="positive" />
+        <Stat label="Outside budgets" value={formatMoney(view.unbudgeted, currency)} hint={`of ${formatMoney(view.overall, currency)} total spending`} />
       </div>
-    )
+
+      {view.suggestions.length > 0 && month === monthKey(new Date()) && (
+        <Card className="mb-5" fold>
+          <CardHeader title={<span className="inline-flex items-center gap-2"><Sparkles size={16} className="text-saffron" /> Suggested budgets</span>}
+            subtitle="Based on your average over the last 3 months, plus 5% headroom." />
+          <div className="grid gap-2 px-5 pb-5 sm:grid-cols-2 lg:grid-cols-4">
+            {view.suggestions.map((s) => (
+              <div key={s.category} className="flex items-center gap-3 rounded-[12px] border border-line p-3">
+                <CategoryIcon cat={s.category} size={32} />
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-sm font-semibold">{category(s.category).label}</div>
+                  <div className="text-[12px] text-ink-3">avg {formatMoney(s.avg, currency)}</div>
+                </div>
+                <Button size="sm" variant="secondary" disabled={!isManager} title={isManager ? undefined : 'Only the household head or a parent can add household budgets'}
+                  onClick={() => mutate((b) => b.insert('budgets', { category: s.category, monthly_limit: s.limit, alert_at_percent: 80, user_id: null }), 'Budget added')}>
+                  {formatMoney(s.limit, currency)}
+                </Button>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+
+      {view.progress.length ? (
+        <div className="grid gap-3 md:grid-cols-2">
+          {view.progress.map((p) => (
+            <Card key={p.budget.id} className="p-4">
+              <div className="flex items-start gap-3">
+                <CategoryIcon cat={p.budget.category} />
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="font-semibold text-ink">{category(p.budget.category).label}</span>
+                    <Badge tone={p.budget.user_id ? 'primary' : 'neutral'}>{p.budget.user_id ? `Personal · ${memberName(p.budget.user_id).split(' ')[0]}` : 'Household'}</Badge>
+                    {p.status === 'over' && <Badge tone="negative">Over budget</Badge>}
+                    {p.status === 'warn' && <Badge tone="warning">Near limit</Badge>}
+                  </div>
+                  <div className="mt-1 text-[13px] text-ink-3">
+                    <span className="font-semibold text-ink">{formatMoney(p.spent, currency)}</span> of {formatMoney(p.budget.monthly_limit, currency)}
+                  </div>
+                </div>
+                <div className="flex">
+                  <IconButton label="Edit budget" onClick={() => setEditing(p.budget)}><PiggyBank size={16} /></IconButton>
+                  <IconButton label="Delete budget" onClick={async () => {
+                    if (await confirmAction({ title: 'Delete this budget?', body: 'Your expenses stay; only the limit is removed.', confirmLabel: 'Delete', danger: true }))
+                      mutate((b) => b.remove('budgets', p.budget.id), 'Budget deleted')
+                  }}><Trash2 size={16} /></IconButton>
+                </div>
+              </div>
+              <Progress className="mt-3" value={p.percent} tone={p.status === 'over' ? 'negative' : p.status === 'warn' ? 'warning' : 'positive'} />
+              <div className="mt-2 flex justify-between text-[12.5px] text-ink-3">
+                <span>{p.remaining >= 0 ? `${formatMoney(p.remaining, currency)} left` : `${formatMoney(-p.remaining, currency)} over`}</span>
+                {p.projected !== null && <span className={p.projected > p.budget.monthly_limit ? 'font-semibold text-warning' : ''}>On pace for {formatMoney(p.projected, currency)}</span>}
+              </div>
+            </Card>
+          ))}
+        </div>
+      ) : (
+        <Card><EmptyState icon={<PiggyBank size={20} />} title="No budgets yet" body="Budgets keep spending honest. Start with groceries and dining out." action={<Button onClick={() => setEditing('new')}>Create a budget</Button>} /></Card>
+      )}
+
+      <BudgetForm budget={editing} onClose={() => setEditing(null)} />
+    </div>
+  )
+}
+
+function BudgetForm({ budget, onClose }: { budget: Budget | 'new' | null; onClose: () => void }) {
+  const { data, userId, isManager, currency, mutate } = useHousehold()
+  const editing = budget && budget !== 'new' ? budget : null
+  const [cat, setCat] = useState('GROCERIES')
+  const [scope, setScope] = useState<'household' | 'me'>('household')
+  const [limit, setLimit] = useState('')
+  const [alert, setAlert] = useState('80')
+  const [error, setError] = useState<string | null>(null)
+  const [key, setKey] = useState<string | null>(null)
+
+  const formKey = budget === null ? null : editing?.id ?? 'new'
+  if (formKey !== key) {
+    setKey(formKey)
+    setCat(editing?.category ?? 'GROCERIES')
+    setScope(editing ? (editing.user_id ? 'me' : 'household') : isManager ? 'household' : 'me')
+    setLimit(editing ? String(editing.monthly_limit) : '')
+    setAlert(String(editing?.alert_at_percent ?? 80))
+    setError(null)
+  }
+
+  async function save() {
+    const value = parseMoney(limit)
+    const pct = Number(alert)
+    if (!Number.isFinite(value) || value <= 0) return setError('Enter a monthly limit above zero.')
+    if (!(pct >= 1 && pct <= 100)) return setError('Alert level must be between 1 and 100%.')
+    const user_id = scope === 'me' ? userId : null
+    if (!editing && data?.budgets.some((b) => b.category === cat && (b.user_id ?? null) === user_id)) return setError('You already have this budget. Edit it instead.')
+    const ok = await mutate((b) => editing
+      ? b.update('budgets', editing.id, { monthly_limit: value, alert_at_percent: pct })
+      : b.insert('budgets', { category: cat, monthly_limit: value, alert_at_percent: pct, user_id }), editing ? 'Budget updated' : 'Budget created')
+    if (ok) onClose()
   }
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <h2 className="font-display font-bold text-xl" style={{ color: 'var(--text-primary)' }}>Budget Planner</h2>
-          <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
-            {getMonthName(now.getMonth() + 1)} {now.getFullYear()} · Track your spending limits
-          </p>
-        </div>
-        <button id="add-budget-btn" onClick={() => setShowForm(!showForm)} className="btn-primary">
-          <Plus size={16} /> New Budget
-        </button>
-      </div>
-
-      {/* Create Form */}
-      {showForm && (
-        <motion.form onSubmit={handleCreate} className="glass-card p-6"
-          initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
-          <h3 className="font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>Create Budget</h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-            <div>
-              <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>Category</label>
-              <select id="budget-cat" value={form.category} onChange={e => setForm(f => ({...f, category: e.target.value as ExpenseCategory}))} className="input-field">
-                {categories.map(c => <option key={c} value={c}>{c.replace('_', ' ')}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>Monthly Limit (₹)</label>
-              <input id="budget-limit" type="number" value={form.monthlyLimit} onChange={e => setForm(f => ({...f, monthlyLimit: e.target.value}))}
-                className="input-field" placeholder="10000" required />
-            </div>
-            <div>
-              <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>Type</label>
-              <select id="budget-type" value={form.budgetType} onChange={e => setForm(f => ({...f, budgetType: e.target.value}))} className="input-field">
-                <option value="PERSONAL">Personal</option>
-                <option value="HOUSEHOLD">Household</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>Alert at %</label>
-              <input id="budget-alert" type="number" value={form.alertAtPercent} onChange={e => setForm(f => ({...f, alertAtPercent: e.target.value}))}
-                className="input-field" placeholder="80" min="10" max="100" />
-            </div>
-          </div>
-          <div className="flex gap-3">
-            <button type="button" onClick={() => setShowForm(false)} className="btn-ghost flex-1">Cancel</button>
-            <button id="budget-submit" type="submit" className="btn-primary flex-1">Create Budget 📊</button>
-          </div>
-        </motion.form>
-      )}
-
-      {/* My Budgets */}
-      <div>
-        <h3 className="font-display font-semibold mb-3" style={{ color: 'var(--text-primary)' }}>My Budgets</h3>
-        {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {[1,2,3].map(i => <div key={i} className="skeleton h-36 rounded-2xl" />)}
-          </div>
-        ) : budgets.length === 0 ? (
-          <div className="glass-card py-16 text-center">
-            <div className="text-4xl mb-2">📊</div>
-            <p style={{ color: 'var(--text-muted)' }}>No personal budgets set</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {budgets.map((b, i) => (
-              <motion.div key={b.id} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.05 }}>
-                <BudgetCard budget={b} />
-              </motion.div>
-            ))}
-          </div>
+    <Modal open={budget !== null} onClose={onClose} title={editing ? 'Edit budget' : 'New budget'}
+      footer={<><Button variant="secondary" onClick={onClose}>Cancel</Button><Button onClick={save}>{editing ? 'Save' : 'Create budget'}</Button></>}>
+      <div className="space-y-4">
+        <Field label="Category">
+          <select className="field" value={cat} disabled={!!editing} onChange={(e) => setCat(e.target.value)}>
+            {CATEGORIES.map((c) => <option key={c.key} value={c.key}>{c.label}</option>)}
+          </select>
+        </Field>
+        {!editing && (
+          <Field label="Applies to" hint={scope === 'household' ? 'Counts every shared expense in this category.' : 'Counts only what you pay in this category, including private entries.'}>
+            <Segmented value={scope} onChange={setScope} options={[
+              ...(isManager ? [{ value: 'household' as const, label: 'Whole household' }] : []),
+              { value: 'me' as const, label: 'Just me' },
+            ]} />
+          </Field>
         )}
-      </div>
-
-      {/* Household Budgets */}
-      {householdBudgets.length > 0 && (
-        <div>
-          <h3 className="font-display font-semibold mb-3" style={{ color: 'var(--text-primary)' }}>Household Budgets</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {householdBudgets.map((b, i) => (
-              <motion.div key={b.id} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.05 }}>
-                <BudgetCard budget={b} />
-              </motion.div>
-            ))}
-          </div>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label={`Monthly limit (${currency})`}><input className="field" inputMode="decimal" value={limit} onChange={(e) => setLimit(e.target.value)} placeholder="10000" /></Field>
+          <Field label="Warn me at (%)"><input className="field" inputMode="numeric" value={alert} onChange={(e) => setAlert(e.target.value)} /></Field>
         </div>
-      )}
-    </div>
+        {error && <p className="rounded-[10px] bg-negative-soft px-3 py-2 text-sm text-negative">{error}</p>}
+      </div>
+    </Modal>
   )
 }

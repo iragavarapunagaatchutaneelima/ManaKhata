@@ -1,0 +1,41 @@
+# ManaKhata Learning Journal
+
+## Overview
+This document tracks the technical decisions, architecture evolution, and learnings during the development of ManaKhata, an AI-powered, multi-user household financial operating system.
+
+## Key Technical Decisions & Learnings
+
+### 1. Centralized API Management
+**Decision:** We created a centralized `api.ts` file in the frontend using Axios.
+**Learning:** This approach allowed us to easily implement a robust demo fallback mechanism. When the backend is offline, the API layer intercepts failures and returns mock data, ensuring the UI remains fully interactive for demonstrations.
+
+### 2. JWT Authentication & Local State
+**Decision:** We used JWT tokens managed by `zustand` (persisted to localStorage).
+**Learning:** Using Zustand makes state access across components extremely easy compared to Context API. For security, in a real production environment, HTTP-only cookies are preferred, but local storage with Zustand provides an excellent developer experience for this MVP.
+
+### 3. Glassmorphism & Framer Motion
+**Decision:** We adopted a glassmorphism design system using Tailwind CSS and Framer Motion for animations.
+**Learning:** Micro-interactions (like `AnimatePresence` for modal entries and exits) significantly elevate the perceived quality of the application. Using a centralized CSS variables approach (`var(--bg-primary)`) made implementing a seamless dark/light mode trivial.
+
+### 4. Phase 1 Feature Implementations
+
+#### Receipt OCR Scanner
+**Approach:** We simulated the OCR scanner on the frontend inside the `AddExpenseModal`. In a real scenario, this would send an image to a FastAPI backend running a specialized model (like Donut or a fine-tuned layout LM).
+**Learning:** Handling file uploads via a hidden `<input type="file" />` and triggering it via a styled `<button>` provides a much cleaner UI than native file inputs.
+
+#### Bill Splitting & IOU Tracker
+**Approach:** We introduced `ExpenseSplit` entities on the backend.
+**Learning:** Tracking who owes whom requires careful state management. Displaying "You Owe" vs "Owed To You" in the frontend requires separating the splits based on the current user's ID against the `owedBy` and `owedTo` fields.
+
+#### Shared Grocery List
+**Approach:** We added `GroceryList` and `GroceryItem` entities, linking them to a `Household`.
+**Learning:** By allowing lists to be converted directly into an expense ("Checkout"), we tightly integrated two modules. This is a powerful UX pattern that saves users from dual data entry.
+
+#### WhatsApp Integration (Mock)
+**Approach:** We created a UI to generate a token (`mk_...`) which a user would theoretically message to a verified WhatsApp bot.
+**Learning:** Designing for conversational interfaces (like WhatsApp) requires robust API token management. The UI needs to clearly explain the multi-step process (Generate Token -> Message Bot -> Connected).
+
+### Next Steps & Future Phases
+- **Phase 2:** Will focus on Goal-Based Savings, Child Allowance / Chore Rewards, and Investment Portfolio Tracking.
+- **Phase 3:** Full AI integration (Anomaly detection, Natural Language processing).
+- **Phase 4:** Mobile App preparation (PWA/React Native).

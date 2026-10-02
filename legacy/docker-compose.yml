@@ -1,0 +1,72 @@
+services:
+  # ─── MySQL Database ──────────────────────────────────────────────────────
+  mysql:
+    image: mysql:8.0
+    container_name: manaKhata-mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: manaKhata
+      MYSQL_USER: manauser
+      MYSQL_PASSWORD: manapass
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  # ─── Spring Boot Backend ─────────────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: manaKhata-backend
+    restart: always
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/manaKhata?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Kolkata
+      SPRING_DATASOURCE_USERNAME: manauser
+      SPRING_DATASOURCE_PASSWORD: manapass
+      # application.yml defaults to the H2 driver; MySQL needs its own driver.
+      SPRING_DATASOURCE_DRIVER: com.mysql.cj.jdbc.Driver
+      H2_CONSOLE_ENABLED: "false"
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET (min 32 chars) in .env or your shell}
+      AI_SERVICE_URL: http://ai-service:8000
+      CORS_ALLOWED_ORIGINS: http://localhost:3000
+    ports:
+      - "8080:8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # ─── Python AI Service ───────────────────────────────────────────────────
+  ai-service:
+    build:
+      context: ./ai-service
+      dockerfile: Dockerfile
+    container_name: manaKhata-ai
+    restart: always
+    ports:
+      - "8000:8000"
+    environment:
+      LOG_LEVEL: info
+    healthcheck:
+      # python:3.11-slim has no curl; use the interpreter instead.
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+volumes:
+  mysql_data:
+
+networks:
+  default:
+    name: manaKhata-network
