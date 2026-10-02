@@ -39,7 +39,7 @@ export default function BillsPage() {
       <PageHeader title="Bills & subscriptions" subtitle="Rent, EMIs, fees and subscriptions with due-date reminders."
         actions={<Button icon={<Plus size={16} />} onClick={() => setEditing('new')}>Add bill</Button>} />
 
-      <div className="mb-5 grid grid-cols-3 gap-3">
+      <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-3 [&>*:nth-child(3)]:col-span-2 sm:[&>*:nth-child(3)]:col-span-1">
         <Stat label="Monthly bill load" value={formatMoney(view.load, currency)} hint="All active bills, per month" />
         <Stat label="Due in 30 days" value={formatMoney(view.due30, currency)} />
         <Stat label="Overdue" value={String(view.overdue)} tone={view.overdue ? 'negative' : 'positive'} hint={view.overdue ? 'Pay or reschedule' : 'All on time'} />

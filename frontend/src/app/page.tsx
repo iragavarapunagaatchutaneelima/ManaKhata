@@ -139,7 +139,7 @@ export default function Landing() {
             ['3', 'Record as you go', 'Add spending in seconds. Kinfold does the maths — splits, budgets, savings rate.'],
           ].map(([n, title, body]) => (
             <div key={n}>
-              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-saffron font-display font-bold text-[#1d1300]">{n}</div>
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-saffron font-display font-bold text-on-saffron">{n}</div>
               <h3 className="mt-3 font-semibold">{title}</h3>
               <p className="mt-1 text-sm text-ink-2">{body}</p>
             </div>

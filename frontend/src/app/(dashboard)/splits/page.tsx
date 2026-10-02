@@ -37,10 +37,7 @@ export default function SplitsPage() {
     const who = debtor === userId ? `you paid ${firstName(creditor)}` : `${firstName(debtor)} paid ${creditor === userId ? 'you' : firstName(creditor)}`
     const ok = await confirmAction({ title: `Record that ${who} ${formatMoney(amount, currency, { decimals: true })}?`, body: 'This marks every open split between the two of you as settled. Make the payment by UPI or cash first.', confirmLabel: 'Mark settled' })
     if (!ok) return
-    await mutate(async (b) => {
-      await b.settleUp(debtor, creditor)
-      await b.settleUp(creditor, debtor) // clear the opposite direction too, so the pair nets to zero
-    }, 'Balance settled')
+    await mutate((b) => b.settlePair(debtor, creditor), 'Balance settled')
   }
 
   return (
@@ -48,7 +45,7 @@ export default function SplitsPage() {
       <PageHeader title="Split & settle" subtitle="Shared costs between family members, netted out fairly."
         actions={<Button icon={<Plus size={16} />} onClick={() => openAddExpense()}>Split an expense</Button>} />
 
-      <div className="mb-5 grid grid-cols-3 gap-3">
+      <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-3 [&>*:nth-child(3)]:col-span-2 sm:[&>*:nth-child(3)]:col-span-1">
         <Stat label="Owed to you" value={formatMoney(view.owedToMe, currency, { decimals: true })} tone="positive" />
         <Stat label="You owe" value={formatMoney(view.iOwe, currency, { decimals: true })} tone={view.iOwe > 0 ? 'negative' : undefined} />
         <Stat label="Your net" value={<Money amount={view.mine} currency={currency} tone="auto" decimals sign />} hint={view.mine === 0 ? 'All square' : view.mine > 0 ? 'Family owes you' : 'You owe family'} />

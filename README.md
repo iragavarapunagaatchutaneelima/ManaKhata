@@ -56,7 +56,7 @@ every number calculated from the family’s own entries.
 | **Insights** | Transparent **financial health score** (5 weighted components), **50/30/20** check, next-month forecast, tips. |
 | **Reports** | 6/12-month income, spending and savings; category comparison; who paid vs fair share; CSV; print to PDF. |
 | **Household** | Invite code (copy/share/regenerate), roles, monthly income, report permissions, hand over head role, remove/leave. |
-| **Account** | Profile, light/dark/system theme, password change, **download all your data (CSV/JSON)**, permanent **account deletion**. |
+| **Account** | Profile, **7 themes** (Midnight dark by default), password change, **download all your data (CSV/JSON)**, permanent **account deletion**. |
 | **Legal** | [Terms of Service](frontend/src/app/terms/page.tsx) and [Privacy Policy](frontend/src/app/privacy/page.tsx) in the app (`/terms`, `/privacy`), accepted at sign-up. |
 
 **Roles** — *Head* (one per household; full control), *Parent* (approvals, chores, budgets, reports), *Adult* and
@@ -95,7 +95,7 @@ every number calculated from the family’s own entries.
 | State | Zustand (session + household ledger) |
 | Backend | Supabase: Postgres 17, Auth, Realtime, Row Level Security, PL/pgSQL functions |
 | Android | Capacitor 8 (`app.kinfold.mobile`, minSdk 24, targetSdk 36) |
-| Quality | Vitest (30 tests), ESLint (Next + TypeScript + React Hooks, strict), TypeScript strict, GitHub Actions, Dependabot |
+| Quality | Vitest (31 tests), ESLint (Next + TypeScript + React Hooks, strict), TypeScript strict, GitHub Actions, Dependabot |
 | Hosting | Vercel (web), Supabase (data), GitHub Actions artifacts (APK) |
 
 ## Repository layout
@@ -213,7 +213,7 @@ vehicles, vehicle expenses, trips, trip expenses, investments, insurance policie
 - **Integrity triggers** reject rows that reference people or parent records from another household.
 - **Privileged actions run as SQL functions** that re-check the caller’s role: `create_household`, `join_household`,
   `update_member`, `remove_member`, `transfer_headship`, `regenerate_invite_code`, `decide_reimbursement`,
-  `set_chore_status`, `wallet_top_up/transfer/withdraw` (no overdrafts, row-locked), `settle_up`, `pay_bill`, `delete_my_account`.
+  `set_chore_status`, `wallet_top_up/transfer/withdraw` (no overdrafts, row-locked), `settle_pair` (clears both directions, records one net payment), `pay_bill`, `delete_my_account`.
 - **Account deletion** erases personal records and the login; if shared history must remain for the family, the login is anonymised and disabled instead.
 - Amounts are `numeric(14,2)` in the database and summed as **integer paise** in the app.
 
@@ -240,19 +240,24 @@ All of the above are unit-tested in [`finance.test.ts`](frontend/src/lib/finance
 
 ## Design system
 
-**Indigo & Saffron.** Indigo for trust and structure, saffron for warmth and highlights; green/red reserved for money in/out.
+**Seven selectable themes** (Settings → Theme, or the palette button in the top bar). **Midnight** is the default; the choice is saved per device, and *Match my device* follows the phone/computer setting. Green and red are reserved for money in/out in every theme.
 
-| Token | Light | Dark |
-|---|---|---|
-| Background | `#F6F7FB` | `#0A0E1C` (deep night-indigo) |
-| Surface | `#FFFFFF` | `#121831` |
-| Text | `#141A2E` | `#EEF0FA` |
-| Primary (indigo) | `#3B4BC8` | `#8C9BFF` |
-| Highlight (saffron) | `#E59A1C` | `#F4B850` |
-| Positive / negative | `#16855A` / `#CC3B2B` | `#4ACB8F` / `#FF7D6E` |
+| Theme | Type | Background | Primary | Accent |
+|---|---|---|---|---|
+| **Midnight** (default) | dark | `#0A0E1C` night-indigo | `#8C9BFF` indigo | `#F4B850` saffron |
+| Pure Black | dark (OLED) | `#000000` | `#8F9CFF` | `#F4B850` |
+| Graphite | dark | `#111113` | `#FF7A63` coral | `#7FA8FF` |
+| Plum Night | dark | `#120E18` | `#C4A3FF` lilac | `#EDB45F` amber |
+| Ocean Deep | dark | `#06121A` | `#4FC3E0` cyan | `#F0BB55` gold |
+| Daylight | light | `#F6F7FB` | `#3B4BC8` indigo | `#E59A1C` saffron |
+| Sand | light | `#F7F3EC` | `#6B3FA0` plum | `#C9852E` amber |
 
-Plus Jakarta Sans for headings, Inter for text, tabular numbers everywhere. Signature detail: a small saffron
-“fold” on featured cards, echoing the logo. Tokens live in [`globals.css`](frontend/src/app/globals.css) and are exposed as Tailwind colours (`bg-surface`, `text-ink-2`, `bg-primary`, …).
+How it works: `next-themes` sets `data-theme="<id>"` on `<html>`; each theme is one token block in
+[`globals.css`](frontend/src/app/globals.css) and the ids/names live in [`themes.ts`](frontend/src/lib/themes.ts). Components only use
+tokens (`bg-surface`, `text-ink-2`, `bg-primary`, …), so every theme styles every screen. Component classes (`.card`, `.field`, …) are in
+Tailwind’s `components` layer so utility classes such as `pl-10` always win — this is what keeps icons from overlapping input text.
+
+Typography: Plus Jakarta Sans for headings, Inter for text, tabular numbers everywhere. Signature detail: a small accent “fold” on featured cards, echoing the logo.
 
 ## Testing
 
@@ -260,7 +265,7 @@ Plus Jakarta Sans for headings, Inter for text, tabular numbers everywhere. Sign
 cd frontend
 npm run typecheck     # TypeScript strict
 npm run lint          # ESLint (Next.js + TypeScript + React Hooks), no rules disabled
-npm run test:run      # 30 Vitest tests: calculation engine + demo business rules
+npm run test:run      # 31 Vitest tests: calculation engine + demo business rules
 npm run build         # production build (Vercel)
 npm run build:android # Android static bundle + Capacitor sync
 ```

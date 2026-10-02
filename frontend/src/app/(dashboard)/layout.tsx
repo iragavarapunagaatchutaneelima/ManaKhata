@@ -3,10 +3,10 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { useTheme } from 'next-themes'
-import { LogOut, Menu, Moon, Plus, RotateCcw, Sparkles, Sun, X } from 'lucide-react'
+import { LogOut, Menu, Palette, Plus, RotateCcw, Sparkles, X } from 'lucide-react'
 import { Logo } from '@/components/Logo'
-import { Avatar, Button, ConfirmHost, IconButton, PageSkeleton, cx, confirmAction } from '@/components/ui'
+import { Avatar, Button, ConfirmHost, IconButton, Modal, PageSkeleton, cx, confirmAction } from '@/components/ui'
+import { ThemePicker } from '@/components/ThemePicker'
 import TransactionModal, { openAddExpense } from '@/components/TransactionModal'
 import { ALL_NAV, NAV } from '@/components/nav'
 import { useSession } from '@/store/session'
@@ -37,7 +37,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [drawerPath, setDrawerPath] = useState<string | null>(null)
   const drawer = drawerPath === pathname
   const setDrawer = (open: boolean) => setDrawerPath(open ? pathname : null)
-  const { resolvedTheme, setTheme } = useTheme()
+  const [themeOpen, setThemeOpen] = useState(false)
   useEffect(() => {
     if (status === 'signedOut') router.replace('/auth/login')
     if (status === 'onboarding') router.replace('/onboarding')
@@ -107,7 +107,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       {/* Mobile drawer */}
       {drawer && (
         <div className="fixed inset-0 z-40 lg:hidden">
-          <div className="absolute inset-0 bg-[#0A0E1C]/50" onClick={() => setDrawer(false)} />
+          <div className="absolute inset-0 bg-overlay" onClick={() => setDrawer(false)} />
           <aside className="safe-top absolute inset-y-0 left-0 flex w-[82%] max-w-[300px] flex-col bg-surface shadow-[var(--shadow-lg)]">
             <div className="flex items-center justify-between px-5 pt-5"><Logo size={28} /><IconButton label="Close menu" onClick={() => setDrawer(false)}><X size={18} /></IconButton></div>
             {sidebar}
@@ -137,9 +137,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <h1 className="truncate font-display text-[16px] font-bold text-ink lg:text-[17px]">{title}</h1>
           <div className="ml-auto flex items-center gap-1">
             <Button size="sm" className="hidden sm:inline-flex" icon={<Plus size={16} />} onClick={() => openAddExpense()}>Add</Button>
-            <IconButton label="Toggle dark mode" onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}>
-              <Sun size={18} className="hidden dark:block" /><Moon size={18} className="dark:hidden" />
-            </IconButton>
+            <IconButton label="Change theme" onClick={() => setThemeOpen(true)}><Palette size={18} /></IconButton>
             <Link href="/settings" aria-label="Settings" className="ml-1"><Avatar name={me?.full_name ?? '?'} size={30} /></Link>
           </div>
         </header>
@@ -183,6 +181,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
       <TransactionModal />
       <ConfirmHost />
+      <Modal open={themeOpen} onClose={() => setThemeOpen(false)} title="Theme" description="Pick a look for Kinfold. Saved on this device." wide>
+        <ThemePicker onPicked={() => setThemeOpen(false)} />
+      </Modal>
     </div>
   )
 }

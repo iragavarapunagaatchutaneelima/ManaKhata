@@ -39,7 +39,7 @@ export default function ReimbursementsPage() {
       <PageHeader title="Reimbursements" subtitle="Paid for the household from your own pocket? Ask to be paid back."
         actions={<Button icon={<Plus size={16} />} onClick={() => setOpen(true)}>Request money back</Button>} />
 
-      <div className="mb-5 grid grid-cols-3 gap-3">
+      <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-3 [&>*:nth-child(3)]:col-span-2 sm:[&>*:nth-child(3)]:col-span-1">
         <Stat label="Waiting for approval" value={formatMoney(view.pending, currency)} tone={view.pending ? 'saffron' : undefined} />
         <Stat label="Approved, unpaid" value={formatMoney(view.approved, currency)} tone="primary" />
         <Stat label="Paid back this year" value={formatMoney(view.paidThisYear, currency)} tone="positive" />

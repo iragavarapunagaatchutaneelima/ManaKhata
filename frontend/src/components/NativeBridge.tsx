@@ -2,11 +2,12 @@
 
 import { useEffect } from 'react'
 import { useTheme } from 'next-themes'
+import { themeById } from '@/lib/themes'
 
 /**
  * Android-only glue, a no-op in the browser:
  *  - hardware back button navigates back, and exits the app from the dashboard/login
- *  - status bar colour follows the light/dark theme
+ *  - status bar colour follows the selected theme
  */
 export default function NativeBridge() {
   const { resolvedTheme } = useTheme()
@@ -32,9 +33,11 @@ export default function NativeBridge() {
       const { Capacitor } = await import('@capacitor/core')
       if (!Capacitor.isNativePlatform()) return
       const { StatusBar, Style } = await import('@capacitor/status-bar')
-      const dark = resolvedTheme === 'dark'
+      const dark = themeById(resolvedTheme)?.dark ?? true
+      // Match the status bar to the active theme's background colour.
+      const bg = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim() || '#0A0E1C'
       await StatusBar.setStyle({ style: dark ? Style.Dark : Style.Light })
-      await StatusBar.setBackgroundColor({ color: dark ? '#0A0E1C' : '#F6F7FB' })
+      await StatusBar.setBackgroundColor({ color: bg })
     })().catch(() => {})
   }, [resolvedTheme])
 

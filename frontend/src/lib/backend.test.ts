@@ -43,9 +43,11 @@ describe('demo backend rules', () => {
     const data = await asha.load()
     const owed = netBalances(data.splits).get(ASHA) ?? 0
     expect(owed).toBeLessThan(0) // Asha owes Meera for shared groceries this month
-    await asha.settleUp(ASHA, MEERA)
-    await asha.settleUp(MEERA, ASHA)
+    const before = (await asha.load()).settlements.length
+    const paid = await asha.settlePair(ASHA, MEERA)
+    expect(paid).toBeCloseTo(-owed) // the net amount, not each direction separately
     const after = await asha.load()
+    expect(after.settlements.length).toBe(before + 1) // one settlement row for one real payment
     expect(after.splits.filter((s) => !s.settled_at && [s.owed_by, s.owed_to].includes(ASHA) && [s.owed_by, s.owed_to].includes(MEERA))).toHaveLength(0)
     expect(after.settlements.length).toBeGreaterThan(0)
   })
@@ -63,5 +65,14 @@ describe('demo backend rules', () => {
     const ravi = new DemoBackend(RAVI)
     const pending = (await ravi.load()).reimbursements.find((r) => r.status === 'PENDING')!
     await expect(ravi.decideReimbursement(pending.id, 'APPROVE')).rejects.toThrow('Only the household head or a parent')
+  })
+
+  it('fills the same defaults as the database (contributor, tax owner, trip payer)', async () => {
+    const meera = new DemoBackend(MEERA)
+    const goal = (await meera.load()).goals[0]
+    const c = await meera.insert('contributions', { goal_id: goal.id, amount: 500 })
+    expect(c.user_id).toBe(MEERA)
+    const tax = await meera.insert('taxDocs', { document_name: 'ELSS', section: '80C', amount: 1000, financial_year: '2026-27' })
+    expect(tax.owner_id).toBe(MEERA)
   })
 })

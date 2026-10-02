@@ -78,7 +78,7 @@ export default function TransactionsPage() {
         </div>
       </div>
 
-      <div className="mb-4 grid grid-cols-3 gap-3">
+      <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-3 [&>*:nth-child(3)]:col-span-2 sm:[&>*:nth-child(3)]:col-span-1">
         <Stat label="Spent" value={formatMoney(spent, currency)} />
         <Stat label="Income" value={formatMoney(income, currency)} tone="positive" />
         <Stat label="Net" value={formatMoney(fromMinor(toMinor(income) - toMinor(spent)), currency)} tone={income - spent >= 0 ? 'positive' : 'negative'} />

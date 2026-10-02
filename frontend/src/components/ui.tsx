@@ -14,7 +14,7 @@ type Variant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'saffron'
 
 const VARIANTS: Record<Variant, string> = {
   primary: 'bg-primary text-on-primary hover:bg-primary-strong shadow-sm',
-  saffron: 'bg-saffron text-[#1d1300] hover:brightness-95 shadow-sm',
+  saffron: 'bg-saffron text-on-saffron hover:brightness-95 shadow-sm',
   secondary: 'bg-surface text-ink border border-line-strong hover:bg-surface-2',
   ghost: 'text-ink-2 hover:bg-surface-2 hover:text-ink',
   danger: 'bg-negative text-white hover:brightness-95',
@@ -81,12 +81,12 @@ export function CardHeader({ title, subtitle, action }: { title: ReactNode; subt
 export function Stat({ label, value, hint, tone, icon }: { label: string; value: ReactNode; hint?: ReactNode; tone?: 'positive' | 'negative' | 'primary' | 'saffron'; icon?: ReactNode }) {
   const toneClass = tone === 'positive' ? 'text-positive' : tone === 'negative' ? 'text-negative' : tone === 'primary' ? 'text-primary' : tone === 'saffron' ? 'text-saffron-ink' : 'text-ink'
   return (
-    <Card className="p-4 sm:p-5">
+    <Card className="min-w-0 p-4 sm:p-5">
       <div className="flex items-center justify-between gap-2 text-[13px] font-medium text-ink-3">
         <span>{label}</span>
         {icon && <span className="text-ink-3">{icon}</span>}
       </div>
-      <div className={cx('mt-2 font-display text-[22px] sm:text-2xl font-bold leading-none', toneClass)}>{value}</div>
+      <div className={cx('mt-2 font-display text-[20px] sm:text-2xl font-bold leading-tight break-words', toneClass)}>{value}</div>
       {hint && <div className="mt-2 text-[12.5px] text-ink-3">{hint}</div>}
     </Card>
   )
@@ -198,7 +198,7 @@ export function Modal({ open, onClose, title, description, children, footer, wid
   return (
     <Dialog.Root open={open} onOpenChange={(o) => !o && onClose()}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-50 bg-[#0A0E1C]/50 backdrop-blur-[2px]" />
+        <Dialog.Overlay className="fixed inset-0 z-50 bg-overlay backdrop-blur-[2px]" />
         <Dialog.Content
           className={cx(
             'fixed z-50 flex max-h-[92dvh] w-full flex-col bg-surface shadow-[var(--shadow-lg)] outline-none',

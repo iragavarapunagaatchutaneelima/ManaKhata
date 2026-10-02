@@ -37,7 +37,7 @@ export default function GoalsPage() {
       <PageHeader title="Savings goals" subtitle="Save together for the things that matter. Kinfold tells you how much to set aside each month."
         actions={<Button icon={<Plus size={16} />} onClick={() => setEditing('new')}>New goal</Button>} />
 
-      <div className="mb-5 grid grid-cols-3 gap-3">
+      <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-3 [&>*:nth-child(3)]:col-span-2 sm:[&>*:nth-child(3)]:col-span-1">
         <Stat label="Saved so far" value={formatMoney(view.saved, currency)} tone="positive" />
         <Stat label="Across all goals" value={formatMoney(view.target, currency)} hint={view.target ? `${((view.saved / view.target) * 100).toFixed(0)}% of the way` : undefined} />
         <Stat label="Needed each month" value={formatMoney(view.monthly, currency)} tone="primary" hint="To hit every target date" />

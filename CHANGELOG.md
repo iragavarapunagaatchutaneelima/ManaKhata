@@ -2,6 +2,14 @@
 
 All notable changes to this project. Dates are in `YYYY-MM-DD`.
 
+## [2.1.0] — 2026-10-02 · Themes & polish
+- **Seven selectable themes** — Midnight (new default, dark), Pure Black, Graphite, Plum Night, Ocean Deep, Daylight, Sand — plus *Match my device*; picker in Settings and in the top bar.
+- **Fixed icons overlapping input text** (and inputs ignoring their sizes) across 15 fields on 9 screens: component classes now live in Tailwind’s `components` layer so utilities win.
+- Stat rows no longer overflow on phones; category tiles show full labels.
+- Settling up records **one** net payment (new `settle_pair` SQL function) instead of one row per direction.
+- Demo mirrors the database’s default columns (goal contributor, tax-proof owner, trip payer) — fixes contributions with no contributor.
+- Status bar on Android follows the selected theme.
+
 ## [2.0.0] — 2026-10-02 · ManaKhata becomes **Kinfold**
 
 ### Product

@@ -3,9 +3,9 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useTheme } from 'next-themes'
-import { Download, FileJson, LogOut, Monitor, Moon, RotateCcw, Sun, Trash2 } from 'lucide-react'
-import { Button, Card, CardHeader, Field, Modal, PageHeader, Segmented, confirmAction } from '@/components/ui'
+import { Download, FileJson, LogOut, RotateCcw, Trash2 } from 'lucide-react'
+import { Button, Card, CardHeader, Field, Modal, PageHeader, confirmAction } from '@/components/ui'
+import { ThemePicker } from '@/components/ThemePicker'
 import { useHousehold } from '@/store/ledger'
 import { useSession } from '@/store/session'
 import { resetDemo } from '@/lib/backend'
@@ -23,7 +23,6 @@ export default function SettingsPage() {
   const updatePassword = useSession((s) => s.updatePassword)
   const startDemo = useSession((s) => s.startDemo)
   const userId = useSession((s) => s.userId)
-  const { theme, setTheme } = useTheme()
   const [name, setName] = useState(me?.full_name ?? '')
   const [password, setPassword] = useState('')
   const [pwBusy, setPwBusy] = useState(false)
@@ -63,14 +62,8 @@ export default function SettingsPage() {
       </Card>
 
       <Card className="mb-5">
-        <CardHeader title="Appearance" subtitle="Kinfold follows your device by default." />
-        <div className="px-5 pb-5">
-          <Segmented value={(theme as 'system' | 'light' | 'dark') ?? 'system'} onChange={setTheme} options={[
-            { value: 'system', label: <span className="inline-flex items-center gap-1.5"><Monitor size={14} />System</span> },
-            { value: 'light', label: <span className="inline-flex items-center gap-1.5"><Sun size={14} />Light</span> },
-            { value: 'dark', label: <span className="inline-flex items-center gap-1.5"><Moon size={14} />Dark</span> },
-          ]} />
-        </div>
+        <CardHeader title="Theme" subtitle="Choose how Kinfold looks. Midnight is the default; your choice is saved on this device." />
+        <div className="px-5 pb-5"><ThemePicker /></div>
       </Card>
 
       {mode === 'live' && (
@@ -110,7 +103,7 @@ export default function SettingsPage() {
           <li><Link href="/terms" className="block px-5 py-3 hover:bg-surface-2">Terms of Service</Link></li>
           <li><Link href="/privacy" className="block px-5 py-3 hover:bg-surface-2">Privacy Policy</Link></li>
           <li><a href={`${REPO_URL}/blob/main/LICENSE`} className="block px-5 py-3 hover:bg-surface-2">Open-source licence (MIT)</a></li>
-          <li className="px-5 py-3 text-ink-3">Kinfold v2.0 · {mode === 'demo' ? 'demo mode' : 'cloud sync on'}</li>
+          <li className="px-5 py-3 text-ink-3">Kinfold v2.1 · {mode === 'demo' ? 'demo mode' : 'cloud sync on'}</li>
         </ul>
       </Card>
 

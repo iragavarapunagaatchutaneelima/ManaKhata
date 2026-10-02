@@ -150,13 +150,13 @@ function TransactionForm() {
             </Field>
             <div className="sm:col-span-2">
               <span className="mb-1.5 block text-[13px] font-semibold text-ink-2">Category</span>
-              <div className="grid grid-cols-4 gap-1.5 sm:grid-cols-5">
+              <div className="grid grid-cols-3 gap-1.5 sm:grid-cols-5">
                 {CATEGORIES.map((c) => (
                   <button key={c.key} type="button" onClick={() => setCat(c.key)}
-                    className={cx('flex flex-col items-center gap-1 rounded-[10px] border p-2 text-[11.5px] font-medium transition',
+                    className={cx('flex flex-col items-center gap-1 rounded-[10px] border px-1.5 py-2 text-[11.5px] font-medium leading-tight transition',
                       cat === c.key ? 'border-primary bg-primary-soft text-ink' : 'border-line text-ink-2 hover:bg-surface-2')}>
                     <CategoryIcon cat={c.key} size={28} />
-                    <span className="line-clamp-1">{c.label}</span>
+                    <span className="line-clamp-2 min-h-[2lh] text-center">{c.label}</span>
                   </button>
                 ))}
               </div>

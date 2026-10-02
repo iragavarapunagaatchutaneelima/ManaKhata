@@ -5,6 +5,7 @@ import { ThemeProvider } from '@/components/ThemeProvider'
 import { Toaster } from 'react-hot-toast'
 import NativeBridge from '@/components/NativeBridge'
 import AppBoot from '@/components/AppBoot'
+import { DEFAULT_THEME, THEME_IDS } from '@/lib/themes'
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter', display: 'swap' })
 const jakarta = Plus_Jakarta_Sans({ subsets: ['latin'], variable: '--font-jakarta', display: 'swap', weight: ['500', '600', '700', '800'] })
@@ -14,10 +15,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 5,
   viewportFit: 'cover',
-  themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#F6F7FB' },
-    { media: '(prefers-color-scheme: dark)', color: '#0A0E1C' },
-  ],
+  themeColor: '#0A0E1C',
 }
 
 export const metadata: Metadata = {
@@ -39,7 +37,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" suppressHydrationWarning className={`${inter.variable} ${jakarta.variable}`}>
       <body>
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+        <ThemeProvider attribute="data-theme" themes={THEME_IDS} defaultTheme={DEFAULT_THEME} enableSystem disableTransitionOnChange storageKey="kinfold.theme">
           <NativeBridge />
           <AppBoot />
           {children}

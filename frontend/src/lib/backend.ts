@@ -31,6 +31,8 @@ export interface Backend {
   decideReimbursement(id: ID, action: 'APPROVE' | 'REJECT' | 'SETTLE'): Promise<void>
   setChoreStatus(id: ID, status: ChoreStatus): Promise<void>
   settleUp(debtor: ID, creditor: ID, note?: string): Promise<number>
+  /** Clear all open splits between two people (both directions); records one net settlement. */
+  settlePair(debtor: ID, creditor: ID, note?: string): Promise<number>
   payBill(id: ID, paidOn?: string): Promise<void>
   updateMember(userId: ID, patch: MemberPatch): Promise<void>
   removeMember(userId: ID): Promise<void>
@@ -133,6 +135,7 @@ export class LiveBackend implements Backend {
   decideReimbursement(id: ID, action: 'APPROVE' | 'REJECT' | 'SETTLE') { return this.rpc<void>('decide_reimbursement', { p_id: id, p_action: action }) }
   setChoreStatus(id: ID, status: ChoreStatus) { return this.rpc<void>('set_chore_status', { p_id: id, p_status: status }) }
   async settleUp(debtor: ID, creditor: ID, note?: string) { return Number(await this.rpc('settle_up', { p_debtor: debtor, p_creditor: creditor, p_note: note ?? null })) }
+  async settlePair(debtor: ID, creditor: ID, note?: string) { return Number(await this.rpc('settle_pair', { p_debtor: debtor, p_creditor: creditor, p_note: note ?? null })) }
   async payBill(id: ID, paidOn?: string) { await this.rpc('pay_bill', { p_bill: id, p_paid_on: paidOn ?? today() }) }
   updateMember(userId: ID, p: MemberPatch) {
     return this.rpc<void>('update_member', {
@@ -223,6 +226,10 @@ export class DemoBackend implements Backend {
     const created = rows.map((r) => ({
       id: uid(), household_id: this.householdId, created_at: now, created_by: this.userId,
       ...(c === 'chat' ? { sender_id: this.userId } : {}),
+      // Mirror the database's `default auth.uid()` columns.
+      ...(c === 'contributions' ? { user_id: this.userId } : {}),
+      ...(c === 'taxDocs' ? { owner_id: this.userId } : {}),
+      ...(c === 'tripExpenses' ? { paid_by: this.userId } : {}),
       ...(c === 'reimbursements' ? { requested_by: this.userId, status: 'PENDING', decided_by: null, decided_at: null, settled_at: null } : {}),
       ...(c === 'chores' ? { status: 'PENDING', completed_at: null, decided_at: null } : {}),
       ...r,
@@ -320,6 +327,24 @@ export class DemoBackend implements Backend {
     this.data.settlements.unshift({ id: uid(), household_id: this.householdId, from_user: debtor, to_user: creditor, amount: total, note: note ?? null, created_by: this.userId, created_at: now })
     this.save()
     return total
+  }
+
+  async settlePair(debtor: ID, creditor: ID, note?: string) { this.sync();
+    if (this.userId !== debtor && this.userId !== creditor && !this.isManager()) fail('Only the people involved can settle this')
+    const between = this.data.splits.filter((s) => !s.settled_at &&
+      ((s.owed_by === debtor && s.owed_to === creditor) || (s.owed_by === creditor && s.owed_to === debtor)))
+    if (!between.length) return 0
+    const net = between.reduce((t, s) => t + (s.owed_by === debtor ? toMinor(s.amount) : -toMinor(s.amount)), 0)
+    const now = new Date().toISOString()
+    between.forEach((s) => { s.settled_at = now })
+    if (net !== 0) {
+      this.data.settlements.unshift({
+        id: uid(), household_id: this.householdId, from_user: net > 0 ? debtor : creditor, to_user: net > 0 ? creditor : debtor,
+        amount: fromMinor(Math.abs(net)), note: note ?? null, created_by: this.userId, created_at: now,
+      })
+    }
+    this.save()
+    return fromMinor(Math.abs(net))
   }
 
   async payBill(id: ID, paidOn = today()) { this.sync();

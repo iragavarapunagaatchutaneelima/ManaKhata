@@ -40,15 +40,17 @@ Deliberately **not** copied: bank-account aggregation and auto-import (needs reg
 
 | Check | Result |
 |---|---|
-| Unit tests (`npm run test:run`) | **30 / 30 pass** — 24 calculation-engine tests with hand-checked numbers (paise-exact sums, splits, budgets, settle-up, wallet, bills, goals, tax caps, FX trips, mileage, CAGR, forecast, CSV injection, income-from-join-date) and 6 demo-rule tests |
+| Unit tests (`npm run test:run`) | **31 / 31 pass** — 24 calculation-engine tests with hand-checked numbers (paise-exact sums, splits, budgets, settle-up, wallet, bills, goals, tax caps, FX trips, mileage, CAGR, forecast, CSV injection, income-from-join-date) and 7 demo-rule tests (incl. one-row net settle-up and database default columns) |
 | TypeScript strict (`npm run typecheck`) | 0 errors |
 | ESLint (`npm run lint`) | 0 problems, **no rules disabled** (v1 needed 10 rules off and hid 153 errors) |
 | Production build | Web build ✓ · Android static export ✓ (34 routes, navigation payloads flattened) |
 | Database security tests (SQL, rolled back) | 18/18: private-expense isolation, wallet overdraft blocked, students can’t create chores or approve, chore reward payout (₹750 + ₹200 = ₹950), settle-up clears ₹500, stranger sees 0 rows and can’t write |
-| Live end-to-end test (two signed-in users via `supabase-js` + publishable key) | 19/19 functional + security checks (create/join household, invite code case-insensitive, one-household rule, exact numeric round-trip ₹1,234.56, private isolation, signed-out sees nothing, role checks, wallet maths 1,350/650, overdraft and forged-row blocks, settle-up ₹617.28, reimbursement flow, bill due-date roll-over, duplicate-budget rejection, chat impersonation blocked, cross-household write blocked, deleted account can’t sign in). Cross-user **realtime** delivery verified separately. |
+| Live end-to-end test (two signed-in users via `supabase-js` + publishable key) | **22/22** (incl. `settle_pair` net settlement and realtime) — earlier run 19/19 functional + security checks (create/join household, invite code case-insensitive, one-household rule, exact numeric round-trip ₹1,234.56, private isolation, signed-out sees nothing, role checks, wallet maths 1,350/650, overdraft and forged-row blocks, settle-up ₹617.28, reimbursement flow, bill due-date roll-over, duplicate-budget rejection, chat impersonation blocked, cross-household write blocked, deleted account can’t sign in). Cross-user **realtime** delivery verified separately. |
 | Account deletion | Both paths verified: sole member → everything deleted; member with shared history → private data erased, login anonymised and disabled, family history intact |
 | Supabase security advisor | Only intended client-callable functions remain (each re-checks the caller); internal trigger/helper functions revoked |
-| UI walkthrough | Every screen in demo mode as head and as student, light + dark, desktop + 375 px phone, static Android bundle |
+| UI walkthrough | Every screen in demo mode as head and as student, all 7 themes, desktop + 375 px phone, static Android bundle |
+| Automated layout scan | Script checks every screen (desktop + phone) for icons overlapping input text, text overflowing its box and horizontal page scroll — **0 findings** after fixes; verified it catches the old overlap bug when re-injected |
+| Functional simulation | Driven through the real UI: equal split (₹1,500 ÷ 4 → net +₹105, exactly as predicted), settle-up, chore approval paying ₹100 from parent to child wallet, bill paid (due date 3 Oct → 3 Nov), reimbursement approval, goal contribution — all totals matched hand calculations, 0 console errors |
 | Test data | All test users and rows removed; production database starts empty |
 
 ## 4. Deployment state

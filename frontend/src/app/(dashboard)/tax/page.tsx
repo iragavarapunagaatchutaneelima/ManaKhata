@@ -35,7 +35,7 @@ export default function TaxPage() {
           {person === userId && <Button icon={<Plus size={16} />} onClick={() => setAdding(true)}>Add proof</Button>}
         </>} />
 
-      <div className="mb-5 grid grid-cols-3 gap-3">
+      <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-3 [&>*:nth-child(3)]:col-span-2 sm:[&>*:nth-child(3)]:col-span-1">
         <Stat label="Eligible deductions" value={formatMoney(view.totalEligible, currency)} tone="primary" />
         <Stat label="Tax saved at 30% slab" value={formatMoney(view.at30, currency)} tone="positive" hint="incl. 4% cess" />
         <Stat label="Tax saved at 20% slab" value={formatMoney(view.at20, currency)} hint="incl. 4% cess" />
