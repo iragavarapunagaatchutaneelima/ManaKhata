@@ -1,187 +1,138 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { motion } from 'framer-motion'
-import { SplitSquareVertical, ArrowUpRight, ArrowDownLeft, CheckCircle2, Circle } from 'lucide-react'
-import api from '@/lib/api'
-import { formatCurrency, formatDate } from '@/hooks/useUtils'
-import { useAuthStore } from '@/store/authStore'
-import toast from 'react-hot-toast'
-
-interface ExpenseSplit {
-  id: number
-  owedBy: { id: number; fullName: string }
-  owedTo: { id: number; fullName: string }
-  amount: number
-  note: string
-  isSettled: boolean
-  createdAt: string
-  expense?: { description: string; category: string }
-}
+import { useMemo } from 'react'
+import { ArrowRight, Handshake, Plus, Split } from 'lucide-react'
+import { Avatar, Badge, Button, Card, CardHeader, EmptyState, Money, PageHeader, Stat, confirmAction } from '@/components/ui'
+import { openAddExpense } from '@/components/TransactionModal'
+import { useHousehold } from '@/store/ledger'
+import { formatDate, formatMoney, sumMoney } from '@/lib/money'
+import { netBalances, pairwiseDebts, simplifyDebts } from '@/lib/finance'
 
 export default function SplitsPage() {
-  const { user } = useAuthStore()
-  const [splits, setSplits] = useState<ExpenseSplit[]>([])
-  const [loading, setLoading] = useState(true)
+  const { data, userId, currency, memberName, firstName, isManager, mutate } = useHousehold()
 
-  useEffect(() => { loadSplits() }, [])
+  const view = useMemo(() => {
+    if (!data) return null
+    const net = netBalances(data.splits)
+    const pairs = pairwiseDebts(data.splits)
+    const plan = simplifyDebts(net)
+    const open = data.splits.filter((s) => !s.settled_at)
+    const expenseById = new Map(data.expenses.map((e) => [e.id, e]))
+    return {
+      net,
+      mine: net.get(userId) ?? 0,
+      owedToMe: sumMoney(pairs.filter((p) => p.creditor === userId), (p) => p.amount),
+      iOwe: sumMoney(pairs.filter((p) => p.debtor === userId), (p) => p.amount),
+      pairs,
+      plan,
+      saved: Math.max(0, pairs.length - plan.length),
+      open: open.map((s) => ({ s, e: expenseById.get(s.expense_id) })).sort((a, b) => (b.e?.expense_date ?? '').localeCompare(a.e?.expense_date ?? '')),
+      history: data.settlements.slice(0, 15),
+    }
+  }, [data, userId])
 
-  const loadSplits = async () => {
-    setLoading(true)
-    try {
-      const res = await api.getMySplits()
-      if (res.success) setSplits(res.data)
-    } finally { setLoading(false) }
-  }
+  if (!view) return null
 
-  const handleSettle = async (id: number) => {
-    try {
-      const res = await api.settleSplit(id)
-      if (res.success) {
-        setSplits(prev => prev.map(s => s.id === id ? { ...s, isSettled: true } : s))
-        toast.success('Split settled successfully!')
-      }
-    } catch { toast.error('Failed to settle split') }
-  }
-
-  const iOwe = splits.filter(s => s.owedBy.id === user?.userId && !s.isSettled)
-  const owedToMe = splits.filter(s => s.owedTo.id === user?.userId && !s.isSettled)
-  const settled = splits.filter(s => s.isSettled)
-
-  const totalIOwe = iOwe.reduce((acc, s) => acc + s.amount, 0)
-  const totalOwedToMe = owedToMe.reduce((acc, s) => acc + s.amount, 0)
-
-  if (loading) return (
-    <div className="max-w-4xl mx-auto space-y-4">
-      {[1, 2, 3].map(i => <div key={i} className="skeleton h-24 rounded-2xl" />)}
-    </div>
-  )
-
-  const SplitCard = ({ split, type }: { split: ExpenseSplit, type: 'owe' | 'owed' | 'settled' }) => {
-    const isOwe = split.owedBy.id === user?.userId
-    const otherPerson = isOwe ? split.owedTo : split.owedBy
-
-    return (
-      <div className={`p-4 rounded-xl border flex items-center gap-4 transition-all hover:bg-white/5 ${
-        split.isSettled ? 'opacity-60' : ''
-      }`} style={{ borderColor: 'var(--border-color)', background: 'var(--bg-primary)' }}>
-        <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 text-white font-bold text-sm ${
-          type === 'owe' ? 'bg-rose-500/20 text-rose-500' :
-          type === 'owed' ? 'bg-emerald-500/20 text-emerald-500' :
-          'bg-slate-500/20 text-[color:var(--text-secondary)]'
-        }`}>
-          {otherPerson.fullName.charAt(0)}
-        </div>
-        
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <span className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>
-              {isOwe ? 'You owe ' : ''}
-              {otherPerson.fullName}
-              {!isOwe ? ' owes you' : ''}
-            </span>
-            <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--surface-2)] text-[color:var(--text-secondary)]">
-              {formatDate(split.createdAt)}
-            </span>
-          </div>
-          <div className="text-sm truncate mt-0.5" style={{ color: 'var(--text-secondary)' }}>
-            {split.expense?.description || split.note || 'Split'}
-          </div>
-        </div>
-
-        <div className="text-right">
-          <div className={`font-display font-bold ${
-            type === 'owe' ? 'text-rose-400' :
-            type === 'owed' ? 'text-emerald-400' :
-            'text-[color:var(--text-secondary)]'
-          }`}>
-            {formatCurrency(split.amount)}
-          </div>
-          {!split.isSettled && (
-            <button
-              onClick={() => handleSettle(split.id)}
-              className="mt-1 flex items-center gap-1 text-[10px] font-medium px-2 py-1 rounded border hover:bg-white/10 transition-colors"
-              style={{ borderColor: 'var(--border-color)', color: 'var(--text-muted)' }}
-            >
-              <Circle size={10} /> Mark Settled
-            </button>
-          )}
-          {split.isSettled && (
-            <div className="mt-1 flex items-center justify-end gap-1 text-[10px] font-medium text-emerald-500/50">
-              <CheckCircle2 size={12} /> Settled
-            </div>
-          )}
-        </div>
-      </div>
-    )
+  async function settle(debtor: string, creditor: string, amount: number) {
+    const who = debtor === userId ? `you paid ${firstName(creditor)}` : `${firstName(debtor)} paid ${creditor === userId ? 'you' : firstName(creditor)}`
+    const ok = await confirmAction({ title: `Record that ${who} ${formatMoney(amount, currency, { decimals: true })}?`, body: 'This marks every open split between the two of you as settled. Make the payment by UPI or cash first.', confirmLabel: 'Mark settled' })
+    if (!ok) return
+    await mutate(async (b) => {
+      await b.settleUp(debtor, creditor)
+      await b.settleUp(creditor, debtor) // clear the opposite direction too, so the pair nets to zero
+    }, 'Balance settled')
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      <div className="flex items-center gap-3">
-        <div className="w-12 h-12 rounded-xl gradient-brand flex items-center justify-center shadow-glow-brand">
-          <SplitSquareVertical size={24} className="text-white" />
-        </div>
-        <div>
-          <h1 className="font-display font-bold text-2xl" style={{ color: 'var(--text-primary)' }}>IOUs & Splits</h1>
-          <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Track who owes who in the household</p>
-        </div>
+    <div>
+      <PageHeader title="Split & settle" subtitle="Shared costs between family members, netted out fairly."
+        actions={<Button icon={<Plus size={16} />} onClick={() => openAddExpense()}>Split an expense</Button>} />
+
+      <div className="mb-5 grid grid-cols-3 gap-3">
+        <Stat label="Owed to you" value={formatMoney(view.owedToMe, currency, { decimals: true })} tone="positive" />
+        <Stat label="You owe" value={formatMoney(view.iOwe, currency, { decimals: true })} tone={view.iOwe > 0 ? 'negative' : undefined} />
+        <Stat label="Your net" value={<Money amount={view.mine} currency={currency} tone="auto" decimals sign />} hint={view.mine === 0 ? 'All square' : view.mine > 0 ? 'Family owes you' : 'You owe family'} />
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div className="glass-card p-5">
-          <div className="flex items-center gap-2 text-rose-400 mb-2">
-            <ArrowUpRight size={18} />
-            <span className="text-sm font-semibold uppercase tracking-wider">You Owe</span>
-          </div>
-          <div className="font-display font-bold text-3xl" style={{ color: 'var(--text-primary)' }}>
-            {formatCurrency(totalIOwe)}
-          </div>
-        </div>
-        
-        <div className="glass-card p-5">
-          <div className="flex items-center gap-2 text-emerald-400 mb-2">
-            <ArrowDownLeft size={18} />
-            <span className="text-sm font-semibold uppercase tracking-wider">Owed To You</span>
-          </div>
-          <div className="font-display font-bold text-3xl" style={{ color: 'var(--text-primary)' }}>
-            {formatCurrency(totalOwedToMe)}
-          </div>
-        </div>
+      <div className="grid gap-5 lg:grid-cols-2">
+        <Card>
+          <CardHeader title="Balances" subtitle="Who owes whom, after netting both ways" />
+          {view.pairs.length ? (
+            <ul className="divide-y divide-line">
+              {view.pairs.map((p) => {
+                const involved = p.debtor === userId || p.creditor === userId
+                return (
+                  <li key={`${p.debtor}-${p.creditor}`} className="flex flex-wrap items-center gap-3 px-5 py-3">
+                    <Avatar name={memberName(p.debtor)} size={30} />
+                    <div className="min-w-0 flex-1 text-sm">
+                      <span className="font-semibold">{p.debtor === userId ? 'You' : firstName(p.debtor)}</span>
+                      <span className="text-ink-3"> owe{p.debtor === userId ? '' : 's'} </span>
+                      <span className="font-semibold">{p.creditor === userId ? 'you' : firstName(p.creditor)}</span>
+                    </div>
+                    <span className="font-semibold tabular-nums">{formatMoney(p.amount, currency, { decimals: true })}</span>
+                    {(involved || isManager) && <Button size="sm" variant="secondary" onClick={() => settle(p.debtor, p.creditor, p.amount)}>Settle</Button>}
+                  </li>
+                )
+              })}
+            </ul>
+          ) : <EmptyState icon={<Handshake size={20} />} title="Everyone is square" body="When someone pays for a shared expense, split it and it shows up here." />}
+        </Card>
+
+        <Card fold>
+          <CardHeader title="Fewest payments to settle everyone" subtitle={view.saved > 0 ? `Saves ${view.saved} payment${view.saved > 1 ? 's' : ''} compared with paying back one by one` : 'Based on everyone’s net balance'} />
+          {view.plan.length ? (
+            <ul className="space-y-2 px-5 pb-5">
+              {view.plan.map((p, i) => (
+                <li key={i} className="flex items-center gap-3 rounded-[12px] border border-line p-3 text-sm">
+                  <Avatar name={memberName(p.debtor)} size={28} />
+                  <span className="font-semibold">{firstName(p.debtor)}</span>
+                  <ArrowRight size={16} className="text-ink-3" />
+                  <Avatar name={memberName(p.creditor)} size={28} />
+                  <span className="font-semibold">{firstName(p.creditor)}</span>
+                  <span className="ml-auto font-semibold text-primary tabular-nums">{formatMoney(p.amount, currency, { decimals: true })}</span>
+                </li>
+              ))}
+              <p className="pt-1 text-[12.5px] text-ink-3">Pay these amounts outside Kinfold (UPI or cash), then use <b>Settle</b> on the matching balances.</p>
+            </ul>
+          ) : <p className="px-5 pb-6 text-sm text-ink-3">Nothing to settle right now.</p>}
+        </Card>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="space-y-3">
-          <h3 className="font-display font-semibold text-rose-400 flex items-center gap-2">
-            <ArrowUpRight size={16} /> To Pay
-          </h3>
-          {iOwe.length === 0 ? (
-            <div className="glass-card p-6 text-center text-sm" style={{ color: 'var(--text-muted)' }}>
-              You don't owe anyone! 🎉
-            </div>
-          ) : iOwe.map(s => <SplitCard key={s.id} split={s} type="owe" />)}
-        </div>
+      <div className="mt-5 grid gap-5 lg:grid-cols-2">
+        <Card>
+          <CardHeader title="Open splits" subtitle="Each shared expense that isn’t settled yet" />
+          {view.open.length ? (
+            <ul className="divide-y divide-line">
+              {view.open.slice(0, 20).map(({ s, e }) => (
+                <li key={s.id} className="flex items-center gap-3 px-5 py-2.5 text-sm">
+                  <Split size={16} className="shrink-0 text-primary" />
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate font-medium">{e?.description ?? 'Shared expense'}</div>
+                    <div className="text-[12px] text-ink-3">{firstName(s.owed_by)} owes {firstName(s.owed_to)} · {formatDate(e?.expense_date)}</div>
+                  </div>
+                  <span className="tabular-nums">{formatMoney(s.amount, currency, { decimals: true })}</span>
+                </li>
+              ))}
+            </ul>
+          ) : <p className="px-5 pb-6 text-sm text-ink-3">No open splits.</p>}
+        </Card>
 
-        <div className="space-y-3">
-          <h3 className="font-display font-semibold text-emerald-400 flex items-center gap-2">
-            <ArrowDownLeft size={16} /> To Receive
-          </h3>
-          {owedToMe.length === 0 ? (
-            <div className="glass-card p-6 text-center text-sm" style={{ color: 'var(--text-muted)' }}>
-              No one owes you money right now.
-            </div>
-          ) : owedToMe.map(s => <SplitCard key={s.id} split={s} type="owed" />)}
-        </div>
+        <Card>
+          <CardHeader title="Settlement history" />
+          {view.history.length ? (
+            <ul className="divide-y divide-line">
+              {view.history.map((h) => (
+                <li key={h.id} className="flex items-center gap-3 px-5 py-2.5 text-sm">
+                  <Badge tone="positive">Settled</Badge>
+                  <span className="min-w-0 flex-1 truncate">{firstName(h.from_user)} → {firstName(h.to_user)}</span>
+                  <span className="text-[12px] text-ink-3">{formatDate(h.created_at)}</span>
+                  <span className="tabular-nums font-semibold">{formatMoney(h.amount, currency, { decimals: true })}</span>
+                </li>
+              ))}
+            </ul>
+          ) : <p className="px-5 pb-6 text-sm text-ink-3">Settled balances will be listed here.</p>}
+        </Card>
       </div>
-
-      {settled.length > 0 && (
-        <div className="mt-8">
-          <h3 className="font-display font-semibold mb-3" style={{ color: 'var(--text-muted)' }}>Recently Settled</h3>
-          <div className="space-y-2">
-            {settled.slice(0, 5).map(s => <SplitCard key={s.id} split={s} type="settled" />)}
-          </div>
-        </div>
-      )}
     </div>
   )
 }

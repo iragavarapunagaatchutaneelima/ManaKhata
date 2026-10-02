@@ -1,256 +1,135 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { TrendingUp, Plus, Activity, Briefcase, Landmark, Shield, User } from 'lucide-react'
-import api from '@/lib/api'
-import { formatCurrency, formatDate } from '@/hooks/useUtils'
-import toast from 'react-hot-toast'
-import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
+import { useMemo, useState } from 'react'
+import { Pencil, Plus, Trash2, TrendingUp } from 'lucide-react'
+import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts'
+import { Card, CardHeader, EmptyState, Field, IconButton, Modal, PageHeader, Stat, Button, confirmAction } from '@/components/ui'
+import { useHousehold } from '@/store/ledger'
+import { formatMoney, formatPercent, parseMoney, today } from '@/lib/money'
+import { cagr, portfolio } from '@/lib/finance'
+import type { AssetType, Investment } from '@/lib/model'
 
-interface Investment {
-  id: number
-  name: string
-  assetType: 'MUTUAL_FUND' | 'STOCK' | 'FIXED_DEPOSIT' | 'GOLD' | 'REAL_ESTATE' | 'OTHER'
-  investedAmount: number
-  currentValue: number
-  investmentDate: string
-  platformOrBroker: string
-  owner: { fullName: string }
-}
+const ASSETS: { value: AssetType; label: string; color: string }[] = [
+  { value: 'MUTUAL_FUND', label: 'Mutual funds', color: '#3B4BC8' }, { value: 'STOCK', label: 'Stocks', color: '#6C5BD4' },
+  { value: 'FIXED_DEPOSIT', label: 'Fixed deposits', color: '#2F8F83' }, { value: 'RECURRING_DEPOSIT', label: 'Recurring deposits', color: '#2E7BC4' },
+  { value: 'PPF', label: 'PPF', color: '#16855A' }, { value: 'EPF', label: 'EPF', color: '#5E7A2E' }, { value: 'NPS', label: 'NPS', color: '#8A6A3B' },
+  { value: 'GOLD', label: 'Gold', color: '#E59A1C' }, { value: 'REAL_ESTATE', label: 'Real estate', color: '#C2562E' },
+  { value: 'BOND', label: 'Bonds', color: '#1F9BB4' }, { value: 'CRYPTO', label: 'Crypto', color: '#B4519E' }, { value: 'OTHER', label: 'Other', color: '#8A90A6' },
+]
+const asset = (v: string) => ASSETS.find((a) => a.value === v) ?? ASSETS[ASSETS.length - 1]
 
 export default function InvestmentsPage() {
-  const [investments, setInvestments] = useState<Investment[]>([])
-  const [loading, setLoading] = useState(true)
-  const [showNew, setShowNew] = useState(false)
-  
-  const [newInv, setNewInv] = useState({ name: '', assetType: 'MUTUAL_FUND', investedAmount: '', currentValue: '', investmentDate: '', platformOrBroker: '' })
-
-  useEffect(() => { loadInvestments() }, [])
-
-  const loadInvestments = async () => {
-    setLoading(true)
-    try {
-      const res = await api.getInvestments()
-      if (res.success) setInvestments(res.data)
-    } finally { setLoading(false) }
-  }
-
-  const handleCreate = async () => {
-    if (!newInv.name || !newInv.investedAmount) return
-    try {
-      const res = await api.createInvestment({
-        ...newInv,
-        investedAmount: parseFloat(newInv.investedAmount),
-        currentValue: newInv.currentValue ? parseFloat(newInv.currentValue) : parseFloat(newInv.investedAmount)
-      })
-      if (res.success) {
-        setInvestments(prev => [res.data, ...prev])
-        setShowNew(false)
-        setNewInv({ name: '', assetType: 'MUTUAL_FUND', investedAmount: '', currentValue: '', investmentDate: '', platformOrBroker: '' })
-        toast.success('Investment added!')
-      }
-    } catch { toast.error('Failed to add investment') }
-  }
-
-  if (loading) return (
-    <div className="max-w-5xl mx-auto space-y-4">
-      {[1, 2, 3].map(i => <div key={i} className="skeleton h-32 rounded-2xl" />)}
-    </div>
-  )
-
-  const totalInvested = investments.reduce((acc, curr) => acc + curr.investedAmount, 0)
-  const totalCurrent = investments.reduce((acc, curr) => acc + curr.currentValue, 0)
-  const absoluteReturn = totalCurrent - totalInvested
-  const percentageReturn = totalInvested > 0 ? (absoluteReturn / totalInvested) * 100 : 0
-  const isPositive = absoluteReturn >= 0
-
-  // Mock chart data for aesthetic
-  const chartData = [
-    { name: 'Jan', val: totalInvested * 0.8 },
-    { name: 'Feb', val: totalInvested * 0.85 },
-    { name: 'Mar', val: totalInvested * 0.9 },
-    { name: 'Apr', val: totalInvested * 0.95 },
-    { name: 'May', val: totalInvested },
-    { name: 'Jun', val: totalCurrent }
-  ]
+  const { data, currency, firstName, mutate } = useHousehold()
+  const [editing, setEditing] = useState<Investment | 'new' | null>(null)
+  const t = today()
+  const summary = useMemo(() => portfolio(data?.investments ?? []), [data])
+  if (!data) return null
+  const holdings = [...data.investments].sort((a, b) => b.current_value - a.current_value)
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-xl gradient-brand flex items-center justify-center shadow-glow-brand">
-            <TrendingUp size={24} className="text-white" />
-          </div>
-          <div>
-            <h1 className="font-display font-bold text-2xl" style={{ color: 'var(--text-primary)' }}>Portfolio Tracker</h1>
-            <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Monitor your family's net worth and investments</p>
-          </div>
-        </div>
-        <button onClick={() => setShowNew(true)} className="btn-primary flex items-center gap-2">
-          <Plus size={16} /> Add Asset
-        </button>
+    <div>
+      <PageHeader title="Investments" subtitle="Your family’s savings and investments in one view. Update values from your statements every month or so."
+        actions={<Button icon={<Plus size={16} />} onClick={() => setEditing('new')}>Add holding</Button>} />
+
+      <div className="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <Stat label="Current value" value={formatMoney(summary.current, currency)} />
+        <Stat label="Invested" value={formatMoney(summary.invested, currency)} />
+        <Stat label="Gain" value={formatMoney(summary.gain, currency, { sign: true })} tone={summary.gain >= 0 ? 'positive' : 'negative'} hint={formatPercent(summary.gainPercent, 1)} />
+        <Stat label="Liquid assets" value={formatMoney(summary.liquid, currency)} hint="FDs, RDs, mutual funds, bonds" />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Portfolio Summary Card */}
-        <div className="lg:col-span-1 glass-card p-6 border border-brand-500/20 flex flex-col justify-between relative overflow-hidden">
-          <div className="absolute top-0 right-0 p-4 opacity-10">
-            <Briefcase size={80} />
-          </div>
-          <div>
-            <h3 className="text-sm font-medium" style={{ color: 'var(--text-muted)' }}>Current Value</h3>
-            <div className="font-display font-bold text-4xl mt-1" style={{ color: 'var(--text-primary)' }}>
-              {formatCurrency(totalCurrent)}
-            </div>
-            
-            <div className="mt-6 space-y-3">
-              <div className="flex justify-between items-end">
-                <span className="text-sm" style={{ color: 'var(--text-muted)' }}>Total Invested</span>
-                <span className="font-medium" style={{ color: 'var(--text-primary)' }}>{formatCurrency(totalInvested)}</span>
-              </div>
-              <div className="flex justify-between items-end">
-                <span className="text-sm" style={{ color: 'var(--text-muted)' }}>Total Returns</span>
-                <div className="text-right">
-                  <span className={`font-semibold block ${isPositive ? 'text-emerald-400' : 'text-red-400'}`}>
-                    {isPositive ? '+' : ''}{formatCurrency(absoluteReturn)}
-                  </span>
-                  <span className={`text-xs ${isPositive ? 'text-emerald-400/80' : 'text-red-400/80'}`}>
-                    {isPositive ? '+' : ''}{percentageReturn.toFixed(2)}%
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+      {holdings.length ? (
+        <div className="grid gap-5 lg:grid-cols-3">
+          <Card>
+            <CardHeader title="Allocation" />
+            <div className="h-48"><ResponsiveContainer><PieChart>
+              <Pie data={summary.allocation} dataKey="value" nameKey="type" innerRadius={50} outerRadius={80} paddingAngle={2} stroke="none">
+                {summary.allocation.map((a) => <Cell key={a.type} fill={asset(a.type).color} />)}
+              </Pie>
+              <Tooltip formatter={(v, n) => [formatMoney(Number(v), currency), asset(String(n)).label]} />
+            </PieChart></ResponsiveContainer></div>
+            <ul className="space-y-1.5 px-5 pb-5 text-[13px]">
+              {summary.allocation.map((a) => (
+                <li key={a.type} className="flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-full" style={{ background: asset(a.type).color }} /><span className="flex-1 text-ink-2">{asset(a.type).label}</span><span className="font-semibold">{a.share.toFixed(0)}%</span></li>
+              ))}
+            </ul>
+          </Card>
 
-        {/* Growth Chart Card */}
-        <div className="lg:col-span-2 glass-card p-6 border border-[color:var(--border-color)] h-64 flex flex-col">
-          <h3 className="text-sm font-medium mb-4" style={{ color: 'var(--text-muted)' }}>Portfolio Growth (6 Months)</h3>
-          <div className="flex-1 min-h-0">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={chartData}>
-                <defs>
-                  <linearGradient id="colorVal" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="var(--accent)" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="var(--accent)" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <XAxis dataKey="name" stroke="var(--text-muted)" fontSize={12} tickLine={false} axisLine={false} />
-                <Tooltip 
-                  contentStyle={{ backgroundColor: 'var(--bg-secondary)', borderColor: 'var(--border-color)', borderRadius: '8px' }}
-                  itemStyle={{ color: 'var(--text-primary)' }}
-                  formatter={(value: any) => formatCurrency(Number(value))}
-                />
-                <Area type="monotone" dataKey="val" stroke="var(--accent)" strokeWidth={3} fillOpacity={1} fill="url(#colorVal)" />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
+          <Card className="overflow-x-auto lg:col-span-2">
+            <table className="table min-w-[640px]">
+              <thead><tr><th>Holding</th><th className="text-right">Invested</th><th className="text-right">Current</th><th className="text-right">Return</th><th /></tr></thead>
+              <tbody>
+                {holdings.map((h) => {
+                  const gain = h.current_value - h.invested_amount
+                  const pct = h.invested_amount > 0 ? (gain / h.invested_amount) * 100 : 0
+                  const annual = cagr(h, t)
+                  return (
+                    <tr key={h.id}>
+                      <td><div className="font-medium">{h.name}</div><div className="text-[12px] text-ink-3">{asset(h.asset_type).label}{h.owner_id && ` · ${firstName(h.owner_id)}`}{h.platform && ` · ${h.platform}`}</div></td>
+                      <td className="text-right tabular-nums">{formatMoney(h.invested_amount, currency)}</td>
+                      <td className="text-right tabular-nums font-semibold">{formatMoney(h.current_value, currency)}</td>
+                      <td className="text-right tabular-nums">
+                        <span className={gain >= 0 ? 'text-positive' : 'text-negative'}>{gain >= 0 ? '+' : ''}{pct.toFixed(1)}%</span>
+                        {annual !== null && <div className="text-[11.5px] text-ink-3">{annual.toFixed(1)}% / yr</div>}
+                      </td>
+                      <td className="whitespace-nowrap text-right">
+                        <IconButton label="Update value" onClick={() => setEditing(h)}><Pencil size={15} /></IconButton>
+                        <IconButton label="Delete holding" onClick={async () => { if (await confirmAction({ title: `Delete ${h.name}?`, confirmLabel: 'Delete', danger: true })) mutate((b) => b.remove('investments', h.id), 'Holding deleted') }}><Trash2 size={15} /></IconButton>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </Card>
         </div>
-      </div>
+      ) : (
+        <Card><EmptyState icon={<TrendingUp size={20} />} title="No holdings yet" body="Add mutual funds, PPF, FDs, stocks or gold to see your family’s net investments." action={<Button onClick={() => setEditing('new')}>Add holding</Button>} /></Card>
+      )}
 
-      <AnimatePresence>
-        {showNew && (
-          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
-            className="glass-card p-5 border border-brand-500/30 space-y-4 overflow-hidden">
-            <h3 className="font-semibold text-lg">Add New Investment</h3>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-xs mb-1" style={{ color: 'var(--text-muted)' }}>Asset Name</label>
-                <input type="text" value={newInv.name} onChange={e => setNewInv(n => ({...n, name: e.target.value}))}
-                  className="input-field" placeholder="e.g. HDFC Midcap" />
-              </div>
-              <div>
-                <label className="block text-xs mb-1" style={{ color: 'var(--text-muted)' }}>Asset Type</label>
-                <select value={newInv.assetType} onChange={e => setNewInv(n => ({...n, assetType: e.target.value as any}))} className="input-field">
-                  <option value="MUTUAL_FUND">Mutual Fund</option>
-                  <option value="STOCK">Stock</option>
-                  <option value="FIXED_DEPOSIT">Fixed Deposit</option>
-                  <option value="GOLD">Gold</option>
-                  <option value="REAL_ESTATE">Real Estate</option>
-                  <option value="OTHER">Other</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs mb-1" style={{ color: 'var(--text-muted)' }}>Platform / Broker</label>
-                <input type="text" value={newInv.platformOrBroker} onChange={e => setNewInv(n => ({...n, platformOrBroker: e.target.value}))}
-                  className="input-field" placeholder="e.g. Zerodha" />
-              </div>
-              <div>
-                <label className="block text-xs mb-1" style={{ color: 'var(--text-muted)' }}>Invested Amount (₹)</label>
-                <input type="number" value={newInv.investedAmount} onChange={e => setNewInv(n => ({...n, investedAmount: e.target.value}))}
-                  className="input-field" placeholder="10000" />
-              </div>
-              <div>
-                <label className="block text-xs mb-1" style={{ color: 'var(--text-muted)' }}>Current Value (₹)</label>
-                <input type="number" value={newInv.currentValue} onChange={e => setNewInv(n => ({...n, currentValue: e.target.value}))}
-                  className="input-field font-bold text-emerald-400" placeholder="Leave empty if same" />
-              </div>
-              <div>
-                <label className="block text-xs mb-1" style={{ color: 'var(--text-muted)' }}>Investment Date</label>
-                <input type="date" value={newInv.investmentDate} onChange={e => setNewInv(n => ({...n, investmentDate: e.target.value}))}
-                  className="input-field" />
-              </div>
-            </div>
-            <div className="flex gap-3 justify-end pt-2">
-              <button onClick={() => setShowNew(false)} className="btn-ghost">Cancel</button>
-              <button onClick={handleCreate} className="btn-primary">Save Asset</button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <div className="glass-card overflow-hidden">
-        <div className="p-4 border-b border-[color:var(--border-color)] flex items-center justify-between">
-          <h3 className="font-semibold">Your Assets</h3>
-        </div>
-        <div className="divide-y divide-white/5">
-          {investments.map(inv => {
-            const ret = inv.currentValue - inv.investedAmount
-            const retPct = inv.investedAmount > 0 ? (ret / inv.investedAmount) * 100 : 0
-            const isPos = ret >= 0
-            return (
-              <div key={inv.id} className="p-4 flex items-center justify-between hover:bg-white/[0.02] transition-colors">
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-full bg-brand-500/10 flex items-center justify-center">
-                    {inv.assetType === 'MUTUAL_FUND' ? <Activity size={20} className="text-brand-400" /> :
-                     inv.assetType === 'FIXED_DEPOSIT' ? <Shield size={20} className="text-brand-400" /> :
-                     inv.assetType === 'REAL_ESTATE' ? <Landmark size={20} className="text-brand-400" /> :
-                     <TrendingUp size={20} className="text-brand-400" />}
-                  </div>
-                  <div>
-                    <h4 className="font-semibold" style={{ color: 'var(--text-primary)' }}>{inv.name}</h4>
-                    <div className="flex items-center gap-2 text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
-                      <span className="px-1.5 py-0.5 rounded bg-[var(--surface-2)]">{inv.assetType.replace('_', ' ')}</span>
-                      {inv.platformOrBroker && <span>• {inv.platformOrBroker}</span>}
-                      <span className="flex items-center gap-1"><User size={10}/> {inv.owner?.fullName}</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="text-right flex items-center gap-6">
-                  <div className="hidden md:block">
-                    <div className="text-xs" style={{ color: 'var(--text-muted)' }}>Invested</div>
-                    <div className="font-medium" style={{ color: 'var(--text-primary)' }}>{formatCurrency(inv.investedAmount)}</div>
-                  </div>
-                  <div>
-                    <div className="text-xs" style={{ color: 'var(--text-muted)' }}>Current Value</div>
-                    <div className="font-semibold" style={{ color: 'var(--text-primary)' }}>{formatCurrency(inv.currentValue)}</div>
-                    <div className={`text-xs ${isPos ? 'text-emerald-400' : 'text-red-400'}`}>
-                      {isPos ? '▲' : '▼'} {formatCurrency(Math.abs(ret))} ({Math.abs(retPct).toFixed(1)}%)
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )
-          })}
-          {investments.length === 0 && (
-            <div className="p-8 text-center text-sm" style={{ color: 'var(--text-muted)' }}>
-              No investments found. Add one to start tracking your portfolio.
-            </div>
-          )}
-        </div>
-      </div>
+      <p className="mt-4 text-[12px] text-ink-3">Kinfold does not fetch live prices or give investment advice. Returns are calculated from the values you enter.</p>
+      <HoldingForm holding={editing} onClose={() => setEditing(null)} />
     </div>
+  )
+}
+
+function HoldingForm({ holding, onClose }: { holding: Investment | 'new' | null; onClose: () => void }) {
+  const { members, userId, currency, mutate } = useHousehold()
+  const editing = holding && holding !== 'new' ? holding : null
+  const [form, setForm] = useState({ name: '', type: 'MUTUAL_FUND' as AssetType, invested: '', current: '', date: '', platform: '', owner: userId })
+  const [error, setError] = useState<string | null>(null)
+  const [key, setKey] = useState<string | null>(null)
+  const formKey = holding === null ? null : editing?.id ?? 'new'
+  if (formKey !== key) {
+    setKey(formKey)
+    setForm(editing ? { name: editing.name, type: editing.asset_type, invested: String(editing.invested_amount), current: String(editing.current_value), date: editing.investment_date ?? '', platform: editing.platform ?? '', owner: editing.owner_id ?? userId }
+      : { name: '', type: 'MUTUAL_FUND', invested: '', current: '', date: '', platform: '', owner: userId })
+    setError(null)
+  }
+
+  async function save() {
+    const invested = parseMoney(form.invested)
+    const current = form.current ? parseMoney(form.current) : invested
+    if (!form.name.trim()) return setError('Name the holding.')
+    if (!Number.isFinite(invested) || invested < 0) return setError('Enter how much was invested.')
+    if (!Number.isFinite(current) || current < 0) return setError('Enter the current value.')
+    const row = { name: form.name.trim(), asset_type: form.type, invested_amount: invested, current_value: current, investment_date: form.date || null, platform: form.platform || null, owner_id: form.owner || null }
+    const ok = await mutate((b) => editing ? b.update('investments', editing.id, row) : b.insert('investments', row), editing ? 'Holding updated' : 'Holding added')
+    if (ok) onClose()
+  }
+
+  return (
+    <Modal open={holding !== null} onClose={onClose} title={editing ? 'Update holding' : 'Add holding'} footer={<><Button variant="secondary" onClick={onClose}>Cancel</Button><Button onClick={save}>Save</Button></>}>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field label="Name" className="sm:col-span-2"><input className="field" maxLength={80} placeholder="e.g. Nifty 50 index fund" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></Field>
+        <Field label="Type"><select className="field" value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value as AssetType })}>{ASSETS.map((a) => <option key={a.value} value={a.value}>{a.label}</option>)}</select></Field>
+        <Field label="Owner"><select className="field" value={form.owner} onChange={(e) => setForm({ ...form, owner: e.target.value })}>{members.map((m) => <option key={m.user_id} value={m.user_id}>{m.full_name}</option>)}</select></Field>
+        <Field label={`Amount invested (${currency})`}><input className="field" inputMode="decimal" value={form.invested} onChange={(e) => setForm({ ...form, invested: e.target.value })} /></Field>
+        <Field label={`Current value (${currency})`}><input className="field" inputMode="decimal" value={form.current} onChange={(e) => setForm({ ...form, current: e.target.value })} /></Field>
+        <Field label="Invested on" hint="Used for yearly return"><input className="field" type="date" max={today()} value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} /></Field>
+        <Field label="Platform / bank"><input className="field" value={form.platform} onChange={(e) => setForm({ ...form, platform: e.target.value })} /></Field>
+      </div>
+      {error && <p className="mt-3 rounded-[10px] bg-negative-soft px-3 py-2 text-sm text-negative">{error}</p>}
+    </Modal>
   )
 }

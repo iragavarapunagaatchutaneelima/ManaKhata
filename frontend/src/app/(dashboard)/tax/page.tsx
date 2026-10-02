@@ -1,171 +1,119 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { FileText, Plus, Upload, Calculator } from 'lucide-react'
-import api from '@/lib/api'
-import { formatCurrency, formatDate } from '@/hooks/useUtils'
-import toast from 'react-hot-toast'
-
-interface TaxDocument {
-  id: number
-  documentName: string
-  category: string
-  amount: number
-  financialYear: string
-  dateUploaded: string
-}
+import { useMemo, useState } from 'react'
+import { Info, Landmark, Plus, Trash2 } from 'lucide-react'
+import { Badge, Button, Card, CardHeader, EmptyState, Field, IconButton, Modal, PageHeader, Progress, Stat, confirmAction } from '@/components/ui'
+import { useHousehold } from '@/store/ledger'
+import { financialYear, formatMoney, parseMoney } from '@/lib/money'
+import { TAX_LIMITS, taxSummary } from '@/lib/finance'
+import type { TaxSection } from '@/lib/model'
 
 export default function TaxPage() {
-  const [docs, setDocs] = useState<TaxDocument[]>([])
-  const [loading, setLoading] = useState(true)
-  const [showNew, setShowNew] = useState(false)
-  
-  const [newDoc, setNewDoc] = useState({ documentName: '', category: '80C', amount: '', financialYear: '2024-2025' })
+  const { data, userId, currency, firstName, mutate } = useHousehold()
+  const thisFY = financialYear()
+  const years = [thisFY, financialYear(new Date(new Date().getFullYear() - 1, new Date().getMonth(), 1)), financialYear(new Date(new Date().getFullYear() - 2, new Date().getMonth(), 1))]
+  const [fy, setFy] = useState(thisFY)
+  const [person, setPerson] = useState(userId)
+  const [adding, setAdding] = useState(false)
 
-  useEffect(() => { loadDocs() }, [])
+  const view = useMemo(() => {
+    if (!data) return null
+    const docs = data.taxDocs.filter((d) => d.owner_id === person)
+    const summary = taxSummary(docs, fy)
+    const cess = 1.04
+    return { docs: docs.filter((d) => d.financial_year === fy), ...summary, at30: summary.totalEligible * 0.3 * cess, at20: summary.totalEligible * 0.2 * cess }
+  }, [data, fy, person])
 
-  const loadDocs = async () => {
-    setLoading(true)
-    try {
-      const res = await api.getTaxDocuments()
-      if (res.success) setDocs(res.data)
-    } finally { setLoading(false) }
-  }
-
-  const handleCreate = async () => {
-    if (!newDoc.documentName || !newDoc.amount) return
-    try {
-      const res = await api.createTaxDocument({
-        ...newDoc,
-        amount: parseFloat(newDoc.amount)
-      })
-      if (res.success) {
-        setDocs(prev => [res.data, ...prev])
-        setShowNew(false)
-        setNewDoc({ documentName: '', category: '80C', amount: '', financialYear: '2024-2025' })
-        toast.success('Document recorded!')
-      }
-    } catch { toast.error('Failed to record document') }
-  }
-
-  if (loading) return (
-    <div className="max-w-4xl mx-auto space-y-4">
-      {[1, 2].map(i => <div key={i} className="skeleton h-24 rounded-2xl" />)}
-    </div>
-  )
-
-  const groupedDocs = docs.reduce((acc, doc) => {
-    const fy = doc.financialYear
-    if (!acc[fy]) acc[fy] = []
-    acc[fy].push(doc)
-    return acc
-  }, {} as Record<string, TaxDocument[]>)
+  if (!view || !data) return null
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-xl bg-blue-500/10 flex items-center justify-center border border-blue-500/20">
-            <Calculator size={24} className="text-blue-500" />
-          </div>
-          <div>
-            <h1 className="font-display font-bold text-2xl" style={{ color: 'var(--text-primary)' }}>Tax Assistant</h1>
-            <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Organize your tax-saving proofs by financial year</p>
-          </div>
-        </div>
-        <button onClick={() => setShowNew(true)} className="btn-primary flex items-center gap-2">
-          <Upload size={16} /> Record Proof
-        </button>
+    <div>
+      <PageHeader title="Tax saver" subtitle="Track deductions under the old tax regime against their legal limits."
+        actions={<>
+          <select className="field h-10 w-auto" value={person} onChange={(e) => setPerson(e.target.value)} aria-label="Person">{data.members.map((m) => <option key={m.user_id} value={m.user_id}>{m.full_name}</option>)}</select>
+          <select className="field h-10 w-auto" value={fy} onChange={(e) => setFy(e.target.value)} aria-label="Financial year">{years.map((y) => <option key={y} value={y}>FY {y}</option>)}</select>
+          {person === userId && <Button icon={<Plus size={16} />} onClick={() => setAdding(true)}>Add proof</Button>}
+        </>} />
+
+      <div className="mb-5 grid grid-cols-3 gap-3">
+        <Stat label="Eligible deductions" value={formatMoney(view.totalEligible, currency)} tone="primary" />
+        <Stat label="Tax saved at 30% slab" value={formatMoney(view.at30, currency)} tone="positive" hint="incl. 4% cess" />
+        <Stat label="Tax saved at 20% slab" value={formatMoney(view.at20, currency)} hint="incl. 4% cess" />
       </div>
 
-      <AnimatePresence>
-        {showNew && (
-          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
-            className="glass-card p-5 border border-blue-500/30 space-y-4 overflow-hidden">
-            <h3 className="font-semibold text-lg">Add Tax Document</h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs mb-1" style={{ color: 'var(--text-muted)' }}>Document Name</label>
-                <input type="text" value={newDoc.documentName} onChange={e => setNewDoc(n => ({...n, documentName: e.target.value}))}
-                  className="input-field" placeholder="e.g. PPF Deposit" />
+      <Card className="mb-5">
+        <CardHeader title={`Sections · FY ${fy}`} subtitle={`${firstName(person)}’s claims vs the limits`} />
+        <ul className="divide-y divide-line">
+          {view.lines.filter((l) => l.claimed > 0 || l.limit !== null).map((l) => (
+            <li key={l.section} className="px-5 py-3">
+              <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
+                <span className="font-medium">{l.label}</span>
+                <span className="tabular-nums text-ink-2">
+                  {formatMoney(l.claimed, currency)}{l.limit !== null && <span className="text-ink-3"> / {formatMoney(l.limit, currency)}</span>}
+                  {l.limit !== null && l.claimed > l.limit && <Badge tone="warning" className="ml-2">capped</Badge>}
+                </span>
               </div>
-              <div>
-                <label className="block text-xs mb-1" style={{ color: 'var(--text-muted)' }}>Amount (₹)</label>
-                <input type="number" value={newDoc.amount} onChange={e => setNewDoc(n => ({...n, amount: e.target.value}))}
-                  className="input-field font-bold text-emerald-400" placeholder="150000" />
+              {l.limit !== null && <Progress className="mt-2" value={(l.claimed / l.limit) * 100} tone={l.claimed >= l.limit ? 'positive' : 'primary'} />}
+              <div className="mt-1 text-[12px] text-ink-3">
+                {l.headroom !== null && l.headroom > 0 ? `You can still claim ${formatMoney(l.headroom, currency)}. ` : ''}{l.note}
               </div>
-              <div>
-                <label className="block text-xs mb-1" style={{ color: 'var(--text-muted)' }}>Category</label>
-                <select value={newDoc.category} onChange={e => setNewDoc(n => ({...n, category: e.target.value}))} className="input-field">
-                  <option>80C</option>
-                  <option>80D</option>
-                  <option>HRA</option>
-                  <option>Home Loan Interest (24B)</option>
-                  <option>Other</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs mb-1" style={{ color: 'var(--text-muted)' }}>Financial Year</label>
-                <select value={newDoc.financialYear} onChange={e => setNewDoc(n => ({...n, financialYear: e.target.value}))} className="input-field">
-                  <option>2024-2025</option>
-                  <option>2023-2024</option>
-                  <option>2022-2023</option>
-                </select>
-              </div>
-            </div>
-            <div className="flex gap-3 justify-end pt-2">
-              <button onClick={() => setShowNew(false)} className="btn-ghost">Cancel</button>
-              <button onClick={handleCreate} className="btn-primary bg-blue-500 hover:bg-blue-600">Save Document</button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            </li>
+          ))}
+        </ul>
+      </Card>
 
-      <div className="space-y-8">
-        {Object.entries(groupedDocs).sort((a,b) => b[0].localeCompare(a[0])).map(([fy, fyDocs]) => {
-          const totalAmount = fyDocs.reduce((sum, d) => sum + d.amount, 0)
-          return (
-            <div key={fy} className="space-y-3">
-              <div className="flex items-center justify-between">
-                <h2 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>FY {fy}</h2>
-                <span className="text-sm font-semibold text-emerald-400">Total: {formatCurrency(totalAmount)}</span>
-              </div>
-              <div className="glass-card divide-y divide-white/5 overflow-hidden border border-[color:var(--border-color)]">
-                {fyDocs.map(doc => (
-                  <div key={doc.id} className="p-4 flex items-center justify-between hover:bg-white/[0.02]">
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center">
-                        <FileText size={20} className="text-blue-400" />
-                      </div>
-                      <div>
-                        <h4 className="font-semibold" style={{ color: 'var(--text-primary)' }}>{doc.documentName}</h4>
-                        <div className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
-                          Uploaded {formatDate(doc.dateUploaded)}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="font-bold text-lg" style={{ color: 'var(--text-primary)' }}>{formatCurrency(doc.amount)}</div>
-                      <div className="text-xs font-semibold px-2 py-0.5 rounded bg-[var(--surface-2)] inline-block mt-1" style={{ color: 'var(--text-muted)' }}>{doc.category}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )
-        })}
+      <Card>
+        <CardHeader title="Proofs & receipts" subtitle="Keep a record of what you’ll declare to your employer or in your return." />
+        {view.docs.length ? (
+          <ul className="divide-y divide-line">
+            {view.docs.map((d) => (
+              <li key={d.id} className="flex items-center gap-3 px-5 py-3 text-sm">
+                <Landmark size={16} className="text-primary" />
+                <span className="min-w-0 flex-1 truncate font-medium">{d.document_name}</span>
+                <Badge>{d.section.replace('_', ' ')}</Badge>
+                <span className="tabular-nums font-semibold">{formatMoney(d.amount, currency)}</span>
+                {d.owner_id === userId && <IconButton label="Delete" onClick={async () => { if (await confirmAction({ title: `Delete ${d.document_name}?`, confirmLabel: 'Delete', danger: true })) mutate((b) => b.remove('taxDocs', d.id), 'Deleted') }}><Trash2 size={15} /></IconButton>}
+              </li>
+            ))}
+          </ul>
+        ) : <EmptyState icon={<Landmark size={20} />} title="Nothing recorded for this year" body="Add PPF, ELSS, insurance premiums, NPS and other proofs as you pay them." />}
+      </Card>
 
-        {docs.length === 0 && !loading && (
-          <div className="text-center py-12 glass-card rounded-2xl border border-blue-500/10">
-            <Calculator size={48} className="mx-auto mb-4 text-blue-500/30" />
-            <h3 className="text-lg font-medium" style={{ color: 'var(--text-primary)' }}>No Tax Documents</h3>
-            <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>
-              Start recording your 80C and other tax-saving investments here.
-            </p>
-          </div>
-        )}
+      <div className="mt-4 flex gap-2 rounded-[12px] border border-line bg-surface p-3 text-[12.5px] text-ink-3">
+        <Info size={16} className="mt-0.5 shrink-0" />
+        <p>Limits shown are for the old tax regime and individual taxpayers below 60. The new regime (the default since FY 2023-24) allows very few of these deductions. This is a record-keeping aid, not tax advice — confirm with a chartered accountant or the Income Tax Department.</p>
       </div>
+
+      <TaxForm open={adding} fy={fy} onClose={() => setAdding(false)} />
     </div>
+  )
+}
+
+function TaxForm({ open, fy, onClose }: { open: boolean; fy: string; onClose: () => void }) {
+  const { currency, mutate } = useHousehold()
+  const [form, setForm] = useState({ name: '', section: '80C' as TaxSection, amount: '' })
+  const [error, setError] = useState<string | null>(null)
+
+  async function save() {
+    const amount = parseMoney(form.amount)
+    if (!form.name.trim()) return setError('Describe the proof, e.g. “PPF deposit”.')
+    if (!Number.isFinite(amount) || amount <= 0) return setError('Enter an amount above zero.')
+    const ok = await mutate((b) => b.insert('taxDocs', { document_name: form.name.trim(), section: form.section, amount, financial_year: fy }), 'Saved')
+    if (ok) { setForm({ name: '', section: '80C', amount: '' }); setError(null); onClose() }
+  }
+
+  return (
+    <Modal open={open} onClose={onClose} title={`Add proof · FY ${fy}`} footer={<><Button variant="secondary" onClick={onClose}>Cancel</Button><Button onClick={save}>Save</Button></>}>
+      <div className="grid gap-4">
+        <Field label="What is it?"><input className="field" maxLength={120} placeholder="e.g. ELSS SIP statement" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></Field>
+        <Field label="Section">
+          <select className="field" value={form.section} onChange={(e) => setForm({ ...form, section: e.target.value as TaxSection })}>
+            {(Object.keys(TAX_LIMITS) as TaxSection[]).map((s) => <option key={s} value={s}>{TAX_LIMITS[s].label}</option>)}
+          </select>
+        </Field>
+        <Field label={`Amount (${currency})`}><input className="field" inputMode="decimal" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} /></Field>
+      </div>
+      {error && <p className="mt-3 rounded-[10px] bg-negative-soft px-3 py-2 text-sm text-negative">{error}</p>}
+    </Modal>
   )
 }

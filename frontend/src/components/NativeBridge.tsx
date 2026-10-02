@@ -34,7 +34,7 @@ export default function NativeBridge() {
       const { StatusBar, Style } = await import('@capacitor/status-bar')
       const dark = resolvedTheme === 'dark'
       await StatusBar.setStyle({ style: dark ? Style.Dark : Style.Light })
-      await StatusBar.setBackgroundColor({ color: dark ? '#141714' : '#f5f2ea' })
+      await StatusBar.setBackgroundColor({ color: dark ? '#0A0E1C' : '#F6F7FB' })
     })().catch(() => {})
   }, [resolvedTheme])
 

@@ -1,181 +1,153 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { motion } from 'framer-motion'
-import api from '@/lib/api'
-import { useAuthStore } from '@/store/authStore'
-import { formatCurrency, getRoleBadge } from '@/hooks/useUtils'
-import type { HouseholdMember } from '@/types'
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { Copy, Crown, LogOut, RefreshCw, Share2, UserMinus } from 'lucide-react'
+import { Avatar, Badge, Button, Card, CardHeader, Field, IconButton, Modal, PageHeader, Toggle, confirmAction } from '@/components/ui'
+import { useHousehold } from '@/store/ledger'
+import { useSession } from '@/store/session'
+import { CURRENCIES, ROLE_LABELS } from '@/lib/categories'
+import { formatMoney, parseMoney } from '@/lib/money'
+import type { Member, Role } from '@/lib/model'
+import { SITE_URL } from '@/lib/config'
 import toast from 'react-hot-toast'
 
 export default function HouseholdPage() {
-  const { user } = useAuthStore()
-  const [members, setMembers] = useState<HouseholdMember[]>([])
-  const [household, setHousehold] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
-  const [allocForm, setAllocForm] = useState({ memberId: '', amount: '' })
+  const router = useRouter()
+  const { data, userId, isManager, isHead, currency, mode, mutate } = useHousehold()
+  const init = useSession((s) => s.init)
+  const [incomeFor, setIncomeFor] = useState<Member | null>(null)
+  const [name, setName] = useState('')
+  if (!data) return null
+  const h = data.household
+  const inviteText = `Join our household “${h.name}” on Kinfold. Sign up at ${SITE_URL} and use invite code ${h.invite_code}.`
 
-  useEffect(() => {
-    api.getHousehold().then(res => {
-      if (res.success) {
-        setHousehold(res.data.household)
-        setMembers(res.data.members || [])
-      }
-    }).finally(() => setLoading(false))
-  }, [])
-
-  const handleAllocate = async (e: React.FormEvent) => {
-    e.preventDefault()
-    try {
-      await api.allocateWallet(parseInt(allocForm.memberId), parseFloat(allocForm.amount))
-      toast.success(`₹${allocForm.amount} allocated!`)
-      setAllocForm({ memberId: '', amount: '' })
-    } catch { toast.error('Failed to allocate') }
+  async function share() {
+    if (navigator.share) { try { await navigator.share({ title: 'Join us on Kinfold', text: inviteText }); return } catch { /* cancelled */ } }
+    await navigator.clipboard.writeText(inviteText)
+    toast.success('Invite message copied')
   }
 
-  const handlePermission = async (memberId: number, key: string, value: boolean) => {
-    try {
-      await api.updatePermissions(memberId, { [key]: value })
-      toast.success('Permission updated')
-      setMembers(prev => prev.map(m => m.id === memberId ? { ...m, [key]: value } : m))
-    } catch { toast.error('Failed to update') }
+  async function leave() {
+    if (!(await confirmAction({ title: `Leave ${h.name}?`, body: 'You will lose access to this household’s shared data. Your past entries stay with the household.', confirmLabel: 'Leave household', danger: true }))) return
+    const ok = await mutate(async (b) => { await b.removeMember(userId); return true })
+    if (ok) { await init(); router.replace('/onboarding') }
   }
-
-  if (loading) return (
-    <div className="max-w-5xl mx-auto space-y-6">
-      {[1,2,3].map(i => <div key={i} className="skeleton h-32 rounded-2xl" />)}
-    </div>
-  )
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6">
-      {/* Household Header */}
-      {household && (
-        <motion.div className="glass-card p-6 relative overflow-hidden"
-          initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
-          <div className="absolute inset-0 gradient-brand opacity-[0.06]" />
-          <div className="relative z-10 flex items-start justify-between flex-wrap gap-4">
-            <div>
-              <h2 className="font-display font-bold text-2xl" style={{ color: 'var(--text-primary)' }}>
-                🏠 {household.name}
-              </h2>
-              {household.address && (
-                <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>📍 {household.address}, {household.city}</p>
-              )}
-              <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>
-                {members.length} members · ₹ {household.currency}
-              </p>
-            </div>
-            <div className="px-4 py-3 rounded-xl text-center" style={{ background: 'rgba(99,102,241,0.10)', border: '1px solid rgba(99,102,241,0.20)' }}>
-              <div className="text-[10px] font-semibold uppercase tracking-wider mb-1" style={{ color: 'var(--text-muted)' }}>
-                Invite Code
-              </div>
-              <div className="font-mono font-bold text-xl tracking-widest text-brand-400">
-                {household.inviteCode}
-              </div>
-              <div className="text-[10px] mt-1" style={{ color: 'var(--text-muted)' }}>Share with family</div>
-            </div>
+    <div>
+      <PageHeader title="Household" subtitle="Members, roles, income and what each person can see." />
+
+      <div className="grid gap-5 lg:grid-cols-3">
+        <Card className="p-5 lg:col-span-1" fold>
+          <div className="text-[13px] font-semibold text-ink-3">Invite code</div>
+          <div className="mt-1 font-mono text-3xl font-bold tracking-[0.2em] text-primary">{h.invite_code}</div>
+          <p className="mt-2 text-[13px] text-ink-3">Family members sign up, choose “Join a household” and enter this code.</p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Button size="sm" variant="secondary" icon={<Copy size={15} />} onClick={async () => { await navigator.clipboard.writeText(h.invite_code); toast.success('Code copied') }}>Copy</Button>
+            <Button size="sm" icon={<Share2 size={15} />} onClick={share}>Share invite</Button>
+            {isManager && mode === 'live' && (
+              <IconButton label="Generate a new code" onClick={async () => {
+                if (await confirmAction({ title: 'Generate a new invite code?', body: 'The old code will stop working. Existing members are not affected.', confirmLabel: 'New code' }))
+                  mutate((b) => b.regenerateInvite(), 'New invite code created')
+              }}><RefreshCw size={16} /></IconButton>
+            )}
           </div>
-        </motion.div>
-      )}
+        </Card>
 
-      {/* Members Grid */}
-      <div>
-        <h3 className="font-display font-semibold text-lg mb-4" style={{ color: 'var(--text-primary)' }}>
-          Family Members ({members.length})
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {members.map((member, i) => {
-            const badge = getRoleBadge(member.role)
-            return (
-              <motion.div key={member.id} className="glass-card p-5"
-                initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: i * 0.06 }}>
-                <div className="flex items-start gap-3 mb-4">
-                  <div className="w-12 h-12 rounded-2xl gradient-brand flex items-center justify-center text-white font-bold text-lg">
-                    {member.fullName.charAt(0)}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="font-display font-semibold text-base truncate" style={{ color: 'var(--text-primary)' }}>
-                      {member.fullName}
-                      {member.isHousehead && <span className="ml-1 text-gold-500">👑</span>}
-                    </div>
-                    <span className={`badge ${badge.className}`}>{badge.label}</span>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-2 mb-3">
-                  <div className="p-2 rounded-xl text-center" style={{ background: 'var(--bg-primary)' }}>
-                    <div className="font-bold text-sm text-emerald-400">{formatCurrency(member.walletBalance)}</div>
-                    <div className="text-[10px]" style={{ color: 'var(--text-muted)' }}>Wallet</div>
-                  </div>
-                  {member.monthlyIncome && member.monthlyIncome > 0 ? (
-                    <div className="p-2 rounded-xl text-center" style={{ background: 'var(--bg-primary)' }}>
-                      <div className="font-bold text-sm text-brand-400">{formatCurrency(member.monthlyIncome)}</div>
-                      <div className="text-[10px]" style={{ color: 'var(--text-muted)' }}>Income</div>
-                    </div>
-                  ) : (
-                    <div className="p-2 rounded-xl text-center" style={{ background: 'var(--bg-primary)' }}>
-                      <div className="font-bold text-sm" style={{ color: 'var(--text-muted)' }}>—</div>
-                      <div className="text-[10px]" style={{ color: 'var(--text-muted)' }}>Income</div>
-                    </div>
-                  )}
-                </div>
-
-                {member.phone && (
-                  <p className="text-xs mb-2" style={{ color: 'var(--text-muted)' }}>📱 {member.phone}</p>
-                )}
-
-                {/* Permission toggles (househead only, non-self) */}
-                {user?.isHousehead && !member.isHousehead && (
-                  <div className="space-y-1.5 pt-3 border-t" style={{ borderColor: 'var(--border-color)' }}>
-                    <p className="text-[10px] font-semibold uppercase tracking-wider mb-2" style={{ color: 'var(--text-muted)' }}>Permissions</p>
-                    {[
-                      { key: 'canViewHousehold', label: 'View Household' },
-                      { key: 'canViewAnalytics', label: 'View Analytics' },
-                      { key: 'canManageExpenses', label: 'Manage Expenses' },
-                    ].map(perm => (
-                      <label key={perm.key} className="flex items-center justify-between cursor-pointer">
-                        <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>{perm.label}</span>
-                        <button
-                          id={`perm-${member.id}-${perm.key}`}
-                          onClick={() => handlePermission(member.id, perm.key, !(member as any)[perm.key])}
-                          className={`w-8 h-4.5 rounded-full transition-all relative ${(member as any)[perm.key] ? 'bg-brand-500' : 'bg-gray-600'}`}
-                          style={{ width: '32px', height: '18px', position: 'relative' }}
-                        >
-                          <span className={`absolute top-0.5 w-3 h-3 rounded-full bg-white transition-all ${(member as any)[perm.key] ? 'left-[14px]' : 'left-0.5'}`} />
-                        </button>
-                      </label>
-                    ))}
-                  </div>
-                )}
-              </motion.div>
-            )
-          })}
-        </div>
+        <Card className="lg:col-span-2">
+          <CardHeader title="Household settings" />
+          <div className="grid gap-4 px-5 pb-5 sm:grid-cols-2">
+            <Field label="Name">
+              <div className="flex gap-2">
+                <input className="field" defaultValue={h.name} disabled={!isManager} maxLength={80} onChange={(e) => setName(e.target.value)} />
+                {isManager && <Button variant="secondary" disabled={!name.trim() || name.trim() === h.name} onClick={() => mutate((b) => b.updateHousehold({ name: name.trim() }), 'Name updated')}>Save</Button>}
+              </div>
+            </Field>
+            <Field label="Currency" hint="Used for all amounts in this household.">
+              <select className="field" value={h.currency} disabled={!isManager} onChange={(e) => mutate((b) => b.updateHousehold({ currency: e.target.value }), 'Currency updated')}>
+                {CURRENCIES.map((c) => <option key={c}>{c}</option>)}
+              </select>
+            </Field>
+          </div>
+        </Card>
       </div>
 
-      {/* Wallet Allocation (Househead) */}
-      {user?.isHousehead && (
-        <div className="glass-card p-6">
-          <h3 className="font-display font-semibold text-base mb-4" style={{ color: 'var(--text-primary)' }}>
-            💳 Allocate Wallet Funds
-          </h3>
-          <form onSubmit={handleAllocate} className="flex flex-wrap gap-3">
-            <select id="alloc-member" value={allocForm.memberId} onChange={e => setAllocForm(f => ({...f, memberId: e.target.value}))}
-              className="input-field flex-1 min-w-40" required>
-              <option value="">Select member...</option>
-              {members.filter(m => !m.isHousehead).map(m => (
-                <option key={m.id} value={m.id}>{m.fullName}</option>
-              ))}
-            </select>
-            <input id="alloc-amount" type="number" min="1" value={allocForm.amount}
-              onChange={e => setAllocForm(f => ({...f, amount: e.target.value}))}
-              className="input-field flex-1 min-w-32" placeholder="Amount (₹)" required />
-            <button id="alloc-submit" type="submit" className="btn-primary px-6">Allocate 💸</button>
-          </form>
-        </div>
+      <Card className="mt-5">
+        <CardHeader title={`Members (${data.members.length})`} subtitle="Monthly income is used for savings rate and budgets. Only managers can change roles and permissions." />
+        <ul className="divide-y divide-line">
+          {data.members.map((m) => {
+            const self = m.user_id === userId
+            const editable = isManager && m.role !== 'HOUSEHEAD'
+            return (
+              <li key={m.user_id} className="flex flex-wrap items-center gap-4 px-5 py-4">
+                <Avatar name={m.full_name} size={40} />
+                <div className="min-w-[160px] flex-1">
+                  <div className="flex items-center gap-2 font-semibold">{m.full_name}{self && <span className="text-ink-3">(you)</span>}{m.role === 'HOUSEHEAD' && <Crown size={14} className="text-saffron" />}</div>
+                  <div className="text-[12.5px] text-ink-3">{m.email}</div>
+                </div>
+                <div className="w-36">
+                  {editable ? (
+                    <select className="field h-9" value={m.role} onChange={(e) => mutate((b) => b.updateMember(m.user_id, { role: e.target.value as Role }), 'Role updated')}>
+                      {(['PARENT', 'ADULT_CHILD', 'STUDENT'] as Role[]).map((r) => <option key={r} value={r}>{ROLE_LABELS[r]}</option>)}
+                    </select>
+                  ) : <Badge tone={m.role === 'HOUSEHEAD' ? 'saffron' : 'primary'}>{ROLE_LABELS[m.role]}</Badge>}
+                </div>
+                <button className="w-32 text-left text-sm disabled:cursor-default" disabled={!(self || isManager)} onClick={() => setIncomeFor(m)}>
+                  <div className="text-[11.5px] text-ink-3">Monthly income</div>
+                  <div className="font-semibold tabular-nums">{formatMoney(m.monthly_income, currency)}{(self || isManager) && <span className="ml-1 text-[12px] text-primary">edit</span>}</div>
+                </button>
+                <div className="flex items-center gap-4 text-[12.5px] text-ink-2">
+                  <label className="flex items-center gap-2">Reports <Toggle label="Can see reports" checked={m.role === 'HOUSEHEAD' || m.role === 'PARENT' || m.can_view_analytics} disabled={!editable || m.role === 'PARENT'}
+                    onChange={(v) => mutate((b) => b.updateMember(m.user_id, { can_view_analytics: v }), 'Permission updated')} /></label>
+                </div>
+                {isHead && !self && (
+                  <div className="flex gap-1">
+                    <IconButton label="Make household head" onClick={async () => {
+                      if (await confirmAction({ title: `Make ${m.full_name} the household head?`, body: 'You will become a parent. Only one person can be head.', confirmLabel: 'Hand over' }))
+                        mutate((b) => b.transferHeadship(m.user_id), 'Household head changed')
+                    }}><Crown size={16} /></IconButton>
+                    <IconButton label="Remove from household" onClick={async () => {
+                      if (await confirmAction({ title: `Remove ${m.full_name}?`, body: 'They lose access immediately. Their past entries stay in the household.', confirmLabel: 'Remove', danger: true }))
+                        mutate((b) => b.removeMember(m.user_id), 'Member removed')
+                    }}><UserMinus size={16} /></IconButton>
+                  </div>
+                )}
+              </li>
+            )
+          })}
+        </ul>
+      </Card>
+
+      {!isHead && mode === 'live' && (
+        <div className="mt-5"><Button variant="ghost" className="text-negative" icon={<LogOut size={16} />} onClick={leave}>Leave this household</Button></div>
       )}
+
+      <IncomeForm member={incomeFor} onClose={() => setIncomeFor(null)} />
     </div>
+  )
+}
+
+function IncomeForm({ member, onClose }: { member: Member | null; onClose: () => void }) {
+  const { currency, mutate } = useHousehold()
+  const [value, setValue] = useState('')
+  const [key, setKey] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  if ((member?.user_id ?? null) !== key) { setKey(member?.user_id ?? null); setValue(member ? String(member.monthly_income) : ''); setError(null) }
+
+  async function save() {
+    const amount = value.trim() === '' ? 0 : parseMoney(value)
+    if (!member) return
+    if (!Number.isFinite(amount) || amount < 0) return setError('Enter zero or a positive amount.')
+    const ok = await mutate(async (b) => { await b.updateMember(member.user_id, { monthly_income: amount }); return true }, 'Income updated')
+    if (ok) onClose()
+  }
+
+  return (
+    <Modal open={!!member} onClose={onClose} title={`Monthly income · ${member?.full_name ?? ''}`} description="Take-home pay per month (after tax). Add bonuses and other income as Income entries."
+      footer={<><Button variant="secondary" onClick={onClose}>Cancel</Button><Button onClick={save}>Save</Button></>}>
+      <Field label={`Amount (${currency})`}><input className="field" inputMode="decimal" autoFocus value={value} onChange={(e) => setValue(e.target.value)} /></Field>
+      {error && <p className="mt-3 rounded-[10px] bg-negative-soft px-3 py-2 text-sm text-negative">{error}</p>}
+    </Modal>
   )
 }

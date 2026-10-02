@@ -1,240 +1,130 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { CheckSquare, Plus, Clock, CheckCircle2, User as UserIcon, Check, XCircle } from 'lucide-react'
-import api from '@/lib/api'
-import { formatCurrency, formatDate } from '@/hooks/useUtils'
-import toast from 'react-hot-toast'
-import { useAuthStore } from '@/store/authStore'
+import { useMemo, useState } from 'react'
+import { CheckCircle2, ClipboardCheck, Plus, RotateCcw, ThumbsDown, ThumbsUp, Trash2 } from 'lucide-react'
+import { Avatar, Badge, Button, Card, EmptyState, Field, IconButton, Modal, PageHeader, confirmAction, cx } from '@/components/ui'
+import { useHousehold } from '@/store/ledger'
+import { daysBetween, formatDate, formatMoney, parseMoney, sumMoney, today } from '@/lib/money'
+import type { Chore } from '@/lib/model'
 
-interface Chore {
-  id: number
-  title: string
-  description: string
-  rewardAmount: number
-  status: 'PENDING' | 'COMPLETED' | 'APPROVED' | 'REJECTED'
-  dueDate: string
-  assignedTo: { id: number; fullName: string }
-}
+const COLUMNS = [
+  { key: 'todo', title: 'To do', match: (c: Chore) => c.status === 'PENDING' || c.status === 'REJECTED' },
+  { key: 'review', title: 'Waiting for review', match: (c: Chore) => c.status === 'COMPLETED' },
+  { key: 'done', title: 'Done & paid', match: (c: Chore) => c.status === 'APPROVED' },
+]
 
 export default function ChoresPage() {
-  const { user } = useAuthStore()
-  const [chores, setChores] = useState<Chore[]>([])
-  const [loading, setLoading] = useState(true)
-  const [showNew, setShowNew] = useState(false)
-  
-  const [newChore, setNewChore] = useState({ title: '', description: '', rewardAmount: '', dueDate: '', assignedToId: '' })
-  const [members, setMembers] = useState<any[]>([])
+  const { data, userId, isManager, currency, memberName, firstName, mutate } = useHousehold()
+  const [open, setOpen] = useState(false)
+  const t = today()
 
-  const isParent = user?.isHousehead || user?.role === 'PARENT'
+  const view = useMemo(() => {
+    if (!data) return null
+    const chores = [...data.chores].sort((a, b) => (a.due_date ?? '9').localeCompare(b.due_date ?? '9'))
+    const month = t.slice(0, 7)
+    const earned = sumMoney(data.chores.filter((c) => c.status === 'APPROVED' && c.assigned_to === userId && (c.decided_at ?? '').startsWith(month)), (c) => c.reward_amount)
+    return { chores, earned }
+  }, [data, t, userId])
 
-  useEffect(() => { 
-    loadChores() 
-    if (isParent) loadMembers()
-  }, [isParent])
-
-  const loadChores = async () => {
-    setLoading(true)
-    try {
-      const res = await api.getChores()
-      if (res.success) setChores(res.data)
-    } finally { setLoading(false) }
-  }
-
-  const loadMembers = async () => {
-    try {
-      const res = await api.getHouseholdMembers()
-      if (res.success) setMembers(res.data)
-    } catch {}
-  }
-
-  const handleCreate = async () => {
-    if (!newChore.title || !newChore.rewardAmount || !newChore.assignedToId) return
-    try {
-      const res = await api.createChore({
-        ...newChore,
-        rewardAmount: parseFloat(newChore.rewardAmount),
-        assignedToId: parseInt(newChore.assignedToId)
-      })
-      if (res.success) {
-        setChores(prev => [...prev, res.data])
-        setShowNew(false)
-        setNewChore({ title: '', description: '', rewardAmount: '', dueDate: '', assignedToId: '' })
-        toast.success('Chore assigned!')
-      }
-    } catch { toast.error('Failed to create chore') }
-  }
-
-  const updateStatus = async (choreId: number, status: 'COMPLETED' | 'APPROVED' | 'REJECTED') => {
-    try {
-      const res = await api.updateChoreStatus(choreId, status)
-      if (res.success) {
-        setChores(prev => prev.map(c => c.id === choreId ? { ...c, status } : c))
-        if (status === 'COMPLETED') toast.success('Chore marked as completed! Waiting for approval.')
-        else if (status === 'APPROVED') toast.success('Chore approved! Reward transferred.')
-        else toast.error('Chore rejected.')
-      }
-    } catch { toast.error('Failed to update status') }
-  }
-
-  if (loading) return (
-    <div className="max-w-4xl mx-auto space-y-4">
-      {[1, 2].map(i => <div key={i} className="skeleton h-24 rounded-2xl" />)}
-    </div>
-  )
-
-  const pendingChores = chores.filter(c => c.status === 'PENDING')
-  const reviewChores = chores.filter(c => c.status === 'COMPLETED')
-  const historyChores = chores.filter(c => c.status === 'APPROVED' || c.status === 'REJECTED')
+  if (!view) return null
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-xl bg-orange-500/10 flex items-center justify-center border border-orange-500/20">
-            <CheckSquare size={24} className="text-orange-500" />
-          </div>
-          <div>
-            <h1 className="font-display font-bold text-2xl" style={{ color: 'var(--text-primary)' }}>Chore Board</h1>
-            <p className="text-sm" style={{ color: 'var(--text-muted)' }}>{isParent ? 'Assign tasks and reward your kids' : 'Complete tasks to earn pocket money!'}</p>
-          </div>
+    <div>
+      <PageHeader title="Chores" subtitle={isManager ? 'Assign chores with a reward. Approving one pays the reward from your wallet.' : `You’ve earned ${formatMoney(view.earned, currency)} from chores this month.`}
+        actions={isManager && <Button icon={<Plus size={16} />} onClick={() => setOpen(true)}>New chore</Button>} />
+
+      {view.chores.length ? (
+        <div className="grid gap-4 lg:grid-cols-3">
+          {COLUMNS.map((col) => {
+            const items = view.chores.filter(col.match)
+            return (
+              <div key={col.key}>
+                <div className="mb-2 flex items-center gap-2 px-1 text-[13px] font-bold uppercase tracking-wide text-ink-3">{col.title}<Badge>{items.length}</Badge></div>
+                <div className="space-y-2.5">
+                  {items.map((c) => {
+                    const overdue = c.due_date && c.status === 'PENDING' && daysBetween(t, c.due_date) < 0
+                    return (
+                      <Card key={c.id} className="p-4">
+                        <div className="flex items-start gap-3">
+                          <Avatar name={memberName(c.assigned_to)} size={32} />
+                          <div className="min-w-0 flex-1">
+                            <div className="font-semibold text-ink">{c.title}</div>
+                            {c.description && <p className="mt-0.5 text-[13px] text-ink-2">{c.description}</p>}
+                            <div className="mt-1.5 flex flex-wrap items-center gap-2 text-[12px] text-ink-3">
+                              <span>{firstName(c.assigned_to)}</span>
+                              {c.due_date && <span className={cx(overdue && 'font-semibold text-negative')}>· due {formatDate(c.due_date)}</span>}
+                              {c.status === 'REJECTED' && <Badge tone="negative">Try again</Badge>}
+                            </div>
+                          </div>
+                          <Badge tone="saffron">{formatMoney(c.reward_amount, currency)}</Badge>
+                        </div>
+                        <div className="mt-3 flex flex-wrap justify-end gap-1.5">
+                          {(c.status === 'PENDING' || c.status === 'REJECTED') && (c.assigned_to === userId || isManager) && (
+                            <Button size="sm" icon={<CheckCircle2 size={15} />} onClick={() => mutate((b) => b.setChoreStatus(c.id, 'COMPLETED'), 'Marked as done — waiting for review')}>Mark done</Button>
+                          )}
+                          {c.status === 'COMPLETED' && isManager && <>
+                            <Button size="sm" variant="secondary" icon={<ThumbsDown size={15} />} onClick={() => mutate((b) => b.setChoreStatus(c.id, 'REJECTED'), 'Sent back')}>Not yet</Button>
+                            <Button size="sm" icon={<ThumbsUp size={15} />} onClick={() => mutate((b) => b.setChoreStatus(c.id, 'APPROVED'), `Approved — ${formatMoney(c.reward_amount, currency)} paid to ${firstName(c.assigned_to)}`)}>Approve & pay</Button>
+                          </>}
+                          {c.status === 'COMPLETED' && !isManager && <span className="text-[12.5px] text-ink-3">A parent will review this soon.</span>}
+                          {isManager && c.status !== 'APPROVED' && c.status !== 'COMPLETED' && (
+                            <IconButton label="Delete chore" onClick={async () => {
+                              if (await confirmAction({ title: `Delete “${c.title}”?`, confirmLabel: 'Delete', danger: true })) mutate((b) => b.remove('chores', c.id), 'Chore deleted')
+                            }}><Trash2 size={15} /></IconButton>
+                          )}
+                          {isManager && c.status === 'REJECTED' && (
+                            <IconButton label="Reset to to-do" onClick={() => mutate((b) => b.setChoreStatus(c.id, 'PENDING'))}><RotateCcw size={15} /></IconButton>
+                          )}
+                        </div>
+                      </Card>
+                    )
+                  })}
+                  {!items.length && <div className="rounded-[14px] border border-dashed border-line px-4 py-6 text-center text-[13px] text-ink-3">Nothing here</div>}
+                </div>
+              </div>
+            )
+          })}
         </div>
-        {isParent && (
-          <button onClick={() => setShowNew(true)} className="btn-primary flex items-center gap-2">
-            <Plus size={16} /> Assign Chore
-          </button>
-        )}
-      </div>
+      ) : (
+        <Card><EmptyState icon={<ClipboardCheck size={20} />} title="No chores yet" body={isManager ? 'Create chores with small rewards to build good habits.' : 'Chores assigned to you will appear here.'}
+          action={isManager && <Button onClick={() => setOpen(true)}>Create a chore</Button>} /></Card>
+      )}
 
-      <AnimatePresence>
-        {showNew && (
-          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
-            className="glass-card p-5 border border-brand-500/30 space-y-4 overflow-hidden">
-            <h3 className="font-semibold text-lg">Assign a Chore</h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs mb-1" style={{ color: 'var(--text-muted)' }}>Chore Title</label>
-                <input type="text" value={newChore.title} onChange={e => setNewChore(n => ({...n, title: e.target.value}))}
-                  className="input-field" placeholder="e.g. Wash the car" />
-              </div>
-              <div>
-                <label className="block text-xs mb-1" style={{ color: 'var(--text-muted)' }}>Reward Amount (₹)</label>
-                <input type="number" value={newChore.rewardAmount} onChange={e => setNewChore(n => ({...n, rewardAmount: e.target.value}))}
-                  className="input-field font-bold text-emerald-400" placeholder="100" />
-              </div>
-              <div>
-                <label className="block text-xs mb-1" style={{ color: 'var(--text-muted)' }}>Assign To</label>
-                <select value={newChore.assignedToId} onChange={e => setNewChore(n => ({...n, assignedToId: e.target.value}))} className="input-field">
-                  <option value="">Select Child...</option>
-                  {members.filter(m => m.role === 'STUDENT' || m.role === 'ADULT_CHILD').map(m => (
-                    <option key={m.id} value={m.id}>{m.fullName}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs mb-1" style={{ color: 'var(--text-muted)' }}>Due Date</label>
-                <input type="date" value={newChore.dueDate} onChange={e => setNewChore(n => ({...n, dueDate: e.target.value}))}
-                  className="input-field" />
-              </div>
-            </div>
-            <div className="flex gap-3 justify-end pt-2">
-              <button onClick={() => setShowNew(false)} className="btn-ghost">Cancel</button>
-              <button onClick={handleCreate} className="btn-primary bg-orange-500 hover:bg-orange-600">Assign Chore</button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <div className="grid grid-cols-1 gap-6">
-        {/* Needs Review Section */}
-        {reviewChores.length > 0 && (
-          <div className="space-y-3">
-            <h3 className="font-semibold text-lg flex items-center gap-2">
-              <CheckCircle2 size={18} className="text-emerald-500" /> 
-              {isParent ? 'Needs Your Review' : 'Waiting for Approval'}
-            </h3>
-            {reviewChores.map(chore => (
-              <ChoreCard key={chore.id} chore={chore} isParent={isParent} onStatusChange={updateStatus} />
-            ))}
-          </div>
-        )}
-
-        {/* To Do Section */}
-        {pendingChores.length > 0 && (
-          <div className="space-y-3">
-            <h3 className="font-semibold text-lg flex items-center gap-2">
-              <Clock size={18} className="text-orange-500" /> To Do
-            </h3>
-            {pendingChores.map(chore => (
-              <ChoreCard key={chore.id} chore={chore} isParent={isParent} onStatusChange={updateStatus} />
-            ))}
-          </div>
-        )}
-
-        {/* History Section */}
-        {historyChores.length > 0 && (
-          <div className="space-y-3">
-            <h3 className="font-semibold text-lg flex items-center gap-2" style={{ color: 'var(--text-muted)' }}>History</h3>
-            {historyChores.map(chore => (
-              <ChoreCard key={chore.id} chore={chore} isParent={isParent} onStatusChange={updateStatus} />
-            ))}
-          </div>
-        )}
-
-        {chores.length === 0 && !loading && (
-          <div className="text-center py-12 glass-card rounded-2xl">
-            <CheckSquare size={48} className="mx-auto mb-4 text-[color:var(--text-muted)]" />
-            <h3 className="text-lg font-medium" style={{ color: 'var(--text-primary)' }}>No chores assigned</h3>
-            <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>
-              {isParent ? "Assign some tasks and reward your kids!" : "You don't have any tasks pending."}
-            </p>
-          </div>
-        )}
-      </div>
+      <ChoreForm open={open} onClose={() => setOpen(false)} />
     </div>
   )
 }
 
-function ChoreCard({ chore, isParent, onStatusChange }: { chore: Chore, isParent: boolean, onStatusChange: (id: number, s: any) => void }) {
-  return (
-    <div className="glass-card p-4 flex items-center justify-between border border-transparent hover:border-white/5 transition-all">
-      <div className="flex items-center gap-4">
-        <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
-          chore.status === 'APPROVED' ? 'bg-emerald-500/20 text-emerald-500' :
-          chore.status === 'REJECTED' ? 'bg-red-500/20 text-red-500' :
-          chore.status === 'COMPLETED' ? 'bg-blue-500/20 text-blue-500' :
-          'bg-orange-500/20 text-orange-500'
-        }`}>
-          {chore.status === 'APPROVED' ? <CheckCircle2 size={20} /> :
-           chore.status === 'REJECTED' ? <XCircle size={20} /> :
-           chore.status === 'COMPLETED' ? <Check size={20} /> :
-           <Clock size={20} />}
-        </div>
-        <div>
-          <h4 className="font-semibold" style={{ color: 'var(--text-primary)' }}>
-            {chore.title}
-            {chore.status === 'REJECTED' && <span className="ml-2 text-xs text-red-400 font-normal">Rejected</span>}
-          </h4>
-          <div className="flex items-center gap-3 text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
-            <span className="font-medium text-emerald-400">Earn {formatCurrency(chore.rewardAmount)}</span>
-            {isParent && <span className="flex items-center gap-1"><UserIcon size={12} /> {chore.assignedTo.fullName}</span>}
-            {chore.dueDate && <span>Due: {formatDate(chore.dueDate)}</span>}
-          </div>
-        </div>
-      </div>
+function ChoreForm({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const { members, userId, currency, mutate } = useHousehold()
+  const candidates = members.filter((m) => m.user_id !== userId)
+  const [form, setForm] = useState({ title: '', description: '', reward: '', assignee: '', due: '' })
+  const [error, setError] = useState<string | null>(null)
 
-      <div className="flex items-center gap-2">
-        {chore.status === 'PENDING' && !isParent && (
-          <button onClick={() => onStatusChange(chore.id, 'COMPLETED')} className="btn-primary text-sm px-4">Done</button>
-        )}
-        {chore.status === 'COMPLETED' && isParent && (
-          <>
-            <button onClick={() => onStatusChange(chore.id, 'REJECTED')} className="btn-ghost text-sm text-red-400 hover:bg-red-500/10">Reject</button>
-            <button onClick={() => onStatusChange(chore.id, 'APPROVED')} className="btn-primary text-sm px-4 bg-emerald-500 hover:bg-emerald-600 text-white">Approve & Pay</button>
-          </>
-        )}
+  async function save() {
+    const reward = form.reward ? parseMoney(form.reward) : 0
+    const assigned_to = form.assignee || candidates[0]?.user_id || userId
+    if (!form.title.trim()) return setError('What needs doing?')
+    if (!Number.isFinite(reward) || reward < 0) return setError('Reward must be zero or more.')
+    const ok = await mutate((b) => b.insert('chores', { title: form.title.trim(), description: form.description.trim() || null, reward_amount: reward, assigned_to, due_date: form.due || null }), 'Chore created')
+    if (ok) { setForm({ title: '', description: '', reward: '', assignee: '', due: '' }); setError(null); onClose() }
+  }
+
+  return (
+    <Modal open={open} onClose={onClose} title="New chore"
+      footer={<><Button variant="secondary" onClick={onClose}>Cancel</Button><Button onClick={save}>Create</Button></>}>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field label="Chore" className="sm:col-span-2"><input className="field" maxLength={80} placeholder="e.g. Water the plants" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} /></Field>
+        <Field label="Details (optional)" className="sm:col-span-2"><input className="field" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></Field>
+        <Field label="Assign to">
+          <select className="field" value={form.assignee || candidates[0]?.user_id || userId} onChange={(e) => setForm({ ...form, assignee: e.target.value })}>
+            {(candidates.length ? candidates : members).map((m) => <option key={m.user_id} value={m.user_id}>{m.full_name}</option>)}
+          </select>
+        </Field>
+        <Field label={`Reward (${currency})`}><input className="field" inputMode="decimal" placeholder="0" value={form.reward} onChange={(e) => setForm({ ...form, reward: e.target.value })} /></Field>
+        <Field label="Due date (optional)"><input className="field" type="date" min={today()} value={form.due} onChange={(e) => setForm({ ...form, due: e.target.value })} /></Field>
       </div>
-    </div>
+      {error && <p className="mt-3 rounded-[10px] bg-negative-soft px-3 py-2 text-sm text-negative">{error}</p>}
+    </Modal>
   )
 }

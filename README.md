@@ -1,160 +1,132 @@
-# ManaKhata — the household ledger
+<p align="center">
+  <img src="frontend/public/icon-192x192.png" width="88" alt="Kinfold logo" />
+</p>
 
-> *Mana Khata* — "our account". One shared ledger for the whole family: expenses, reimbursements, budgets, wallets, groceries, chores, goals, trips and more.
+<h1 align="center">Kinfold</h1>
+<p align="center"><b>Your family’s money, folded into one place.</b><br/>
+A shared money app for households — on the web and on Android.</p>
 
-ManaKhata ships in **two variants from one codebase**:
-
-| Variant | What it is | How to get it |
-|---|---|---|
-| 🌐 **Web app** | Next.js site — works in any desktop or mobile browser, installable as a PWA | Live demo: **https://frontend-phi-lemon-1hkzt9uj98.vercel.app** |
-| 🤖 **Android app** | Native Android app (Capacitor) wrapping the same UI | Download the APK from the latest **CI** run, or build it yourself ([§7](#7-android-app)) |
-
-**Demo sign-in:** any account below, password **`Demo@1234`**.
-
-| Role | Email |
-|---|---|
-| Househead | `demo@manaKhata.app` |
-| Parent | `ria@manaKhata.app` |
-| Adult child | `max@manaKhata.app` |
-| Student | `lucy@manaKhata.app` |
-| Student | `jack@manaKhata.app` |
-
-> 📋 **Project status & known issues:** see **[AUDIT.md](AUDIT.md)** — what was fixed, what is still open, and in which order to tackle it.
+<p align="center">
+  <a href="https://frontend-phi-lemon-1hkzt9uj98.vercel.app"><b>Open Kinfold →</b></a> ·
+  <a href="https://frontend-phi-lemon-1hkzt9uj98.vercel.app/demo">Try the demo</a> ·
+  <a href="#android-app">Android app</a> ·
+  <a href="AUDIT.md">Audit & roadmap</a> ·
+  <a href="LICENSE">MIT licence</a>
+</p>
 
 ---
+
+Kinfold (formerly **ManaKhata**) lets a whole family record spending together, split costs fairly, stay ahead of
+bills and budgets, give pocket money and chore rewards, save toward goals, and see where the money goes — with
+every number calculated from the family’s own entries.
+
+> **Two ways in:** anyone can **try the demo** (a sample family, stored only in your browser — no sign-up), or
+> **create a free account** to run your real household, synced across every family member’s phone and laptop.
 
 ## Contents
 
-1. [Features](#1-features)
-2. [How it fits together](#2-how-it-fits-together)
-3. [Tech stack](#3-tech-stack)
-4. [Repository layout](#4-repository-layout)
-5. [Run it locally](#5-run-it-locally)
-6. [Configuration (environment variables)](#6-configuration-environment-variables)
-7. [Android app](#7-android-app)
-8. [Deploying](#8-deploying)
-9. [API reference](#9-api-reference)
-10. [Design system — the "Ledger" theme](#10-design-system--the-ledger-theme)
-11. [Testing & quality checks](#11-testing--quality-checks)
-12. [Troubleshooting](#12-troubleshooting)
-13. [Contributing](#13-contributing)
+1. [Features](#features) · 2. [How it works](#how-it-works) · 3. [Tech stack](#tech-stack) · 4. [Repository layout](#repository-layout)
+5. [Run locally](#run-locally) · 6. [Configuration](#configuration) · 7. [Android app](#android-app) · 8. [Deployment](#deployment)
+9. [Data model & security](#data-model--security) · 10. [How the numbers are calculated](#how-the-numbers-are-calculated)
+11. [Design system](#design-system) · 12. [Testing](#testing) · 13. [Troubleshooting](#troubleshooting) · 14. [Contributing, security & licence](#contributing-security--licence)
 
 ---
 
-## 1. Features
+## Features
 
-| Area | Screen | What you can do |
-|---|---|---|
-| **Overview** | Dashboard | Wallet balance, month spend, savings, pending reimbursements, financial health score, recent expenses, AI tips |
-| | Household | Members, roles, per-member permissions (househead only), invite code |
-| | Groceries | Shared lists, tick items, estimated cost, check out a list into an expense |
-| | Chores | Assign chores with a reward, submit → approve → pay out |
-| **Finance** | Expenses | Add / edit / delete, categories, personal vs household visibility, receipt scan UI, monthly breakdown |
-| | Reimbursements | Request money back, approve / reject / settle (househead) |
-| | Split IOUs | Split a bill between members and settle up |
-| | Wallet | Household wallet, allocate funds to members |
-| | Budget | Category budgets with alert thresholds |
-| | Savings Goals | Targets, contributions, progress |
-| | Investments · Medical Vault · Tax | Track holdings, insurance policies and tax documents |
-| **Assets** | Vehicles · Trips | Vehicle fuel/maintenance log; trip budgets with multi-currency expenses |
-| **Intelligence** | AI Advisor · Analytics | Health score, next-month predictions, investment suggestion, charts |
-| **Social** | Family Chat · Achievements | Household chat (local-only for now — see AUDIT O-06), badges |
-| **Account** | Settings · Integrations | Profile, theme, WhatsApp/bank integrations (preview) |
-| **Everywhere** | | Light/dark theme, PDF statements, floating calculator, phone bottom tab bar |
+| Area | What you can do |
+|---|---|
+| **Home** | Month-to-date household spending (with pace vs the same day last month), income, money left, your fair share, income-vs-spending chart, category donut, upcoming bills, budget status and personalised tips. Members without report access see a personal summary instead. |
+| **Transactions** | Expenses and income in one list, grouped by day; filter by month, type, category, person; search; edit/delete; **CSV export**. |
+| **Quick add** | One tap from anywhere (the **+** button): amount, category, who paid, payment method, private or shared, **split equally or by custom amounts**, reimbursable flag, notes. |
+| **Budgets** | Household or personal monthly limits per category, alert threshold, month-end projection, and **suggested budgets** from your 3-month average. |
+| **Bills** | Rent, EMIs, school fees, insurance and subscriptions (weekly → yearly); overdue/due-soon flags; **Mark paid** records the expense and rolls the due date forward; normalised monthly bill load. |
+| **Split & settle** | Who owes whom (netted both ways), Splitwise-style **fewest-payments plan**, open splits, one-tap settle, settlement history. |
+| **Reimbursements** | Request money back → head/parent approves or declines → marks paid. |
+| **Pocket money** | A family wallet ledger for allowances, transfers and spending; balances can never go negative. |
+| **Chores** | Assign chores with rewards; kids mark done; a parent approves and the reward is paid automatically from their wallet. |
+| **Groceries** | Shared lists, live tick-off, estimated totals; **Done shopping** records the real amount as an expense. |
+| **Family chat** | `#general`, `#expenses`, `#plans` channels with realtime delivery. |
+| **Savings goals** | Targets, dates, contributions by person and the **monthly amount needed** to hit the date. |
+| **Trips** | Trip budgets with expenses in **any currency**, converted at the rate you enter; per-day and per-person totals. |
+| **Vehicles** | Fuel/service log with odometer; real **km/l** (full-tank method) and **cost per km**. |
+| **Investments** | Holdings by type, invested vs current, gain, **CAGR** (≥ 1 year), allocation donut, liquid assets. |
+| **Insurance** | Health/life/vehicle policies, annual premiums, renewal alerts, cover check (life 10× income, ₹10L health). |
+| **Tax saver** | Old-regime deductions (80C, 80CCD(1B), 80D, 24(b), 80E, 80G, 80TTA, HRA) **capped at their legal limits**, headroom and tax saved at 20%/30% slabs. |
+| **Insights** | Transparent **financial health score** (5 weighted components), **50/30/20** check, next-month forecast, tips. |
+| **Reports** | 6/12-month income, spending and savings; category comparison; who paid vs fair share; CSV; print to PDF. |
+| **Household** | Invite code (copy/share/regenerate), roles, monthly income, report permissions, hand over head role, remove/leave. |
+| **Account** | Profile, light/dark/system theme, password change, **download all your data (CSV/JSON)**, permanent **account deletion**. |
+| **Legal** | [Terms of Service](frontend/src/app/terms/page.tsx) and [Privacy Policy](frontend/src/app/privacy/page.tsx) in the app (`/terms`, `/privacy`), accepted at sign-up. |
 
-### Demo mode
+**Roles** — *Head* (one per household; full control), *Parent* (approvals, chores, budgets, reports), *Adult* and
+*Student* (record and view; students don’t see household reports unless allowed).
 
-When `NEXT_PUBLIC_DEMO_MODE=true` (the hosted site and the default Android build) the app never contacts a server — sign-in uses the demo accounts and every screen uses built-in sample data. Edits show success but are **not saved**.
-
-When demo mode is off (local development), the app talks to the Spring Boot API. If the API is not running at all, it falls back to demo data so the UI can still be explored.
-
----
-
-## 2. How it fits together
+## How it works
 
 ```
- ┌──────────────────────────┐        ┌──────────────────────────────┐
- │  Web browser / PWA       │        │  Android app (Capacitor)     │
- │  Next.js on Vercel       │        │  same UI, static export      │
- └────────────┬─────────────┘        └──────────────┬───────────────┘
-              │  HTTPS JSON  (+ STOMP WebSocket /ws)│
-              ▼                                     ▼
-        ┌───────────────────────────────────────────────────┐
-        │  Spring Boot API  :8080                           │
-        │  JWT auth · REST controllers · JPA/Hibernate      │
-        └───────────────┬───────────────────────────────────┘
-                        │
-              ┌─────────┴─────────┐          ┌───────────────────────┐
-              │ H2 (dev, in-mem)  │          │ FastAPI AI service    │
-              │ MySQL 8 (docker)  │          │ :8000 (optional, not  │
-              └───────────────────┘          │ yet called — AUDIT O-09)
-                                             └───────────────────────┘
+ ┌───────────────────────────┐      ┌───────────────────────────┐
+ │ Web app (Vercel, PWA)     │      │ Android app (Capacitor)   │
+ │ Next.js static export     │      │ same UI, bundled offline  │
+ └─────────────┬─────────────┘      └─────────────┬─────────────┘
+               │ HTTPS (supabase-js, publishable key)│
+               ▼                                    ▼
+      ┌────────────────────────────────────────────────────┐
+      │ Supabase project “Kinfold” (Mumbai, ap-south-1)    │
+      │  • Auth: email + password, confirmation, reset     │
+      │  • Postgres 17: 24 tables, Row Level Security      │
+      │  • SQL functions for approvals, wallet, settle-up  │
+      │  • Realtime: family members see changes live       │
+      └────────────────────────────────────────────────────┘
+
+ Demo mode: the same UI runs against a sample family kept in the browser’s localStorage
+ (src/lib/backend.ts → DemoBackend). No network calls, nothing leaves the device.
 ```
 
----
+- **One calculation engine.** Every figure on screen is computed by [`src/lib/finance.ts`](frontend/src/lib/finance.ts) from raw rows, for demo and real households alike.
+- **Two interchangeable backends** behind one interface ([`src/lib/backend.ts`](frontend/src/lib/backend.ts)): `LiveBackend` (Supabase) and `DemoBackend` (browser storage, enforcing the same rules as the SQL functions).
+- **No custom server.** The website is a static Next.js export on Vercel; the Android app bundles the same files. The old Spring Boot API lives in [`legacy/`](legacy/README.md) and is not used.
 
-## 3. Tech stack
+## Tech stack
 
 | Layer | Technology |
 |---|---|
-| Frontend | Next.js **16.3** (App Router, Turbopack), React 19, TypeScript 5, Tailwind CSS 4, Zustand, Recharts, Framer Motion, Axios, jsPDF |
-| Android | Capacitor 8 (`@capacitor/android`, `app`, `status-bar`), minSdk 24, targetSdk 36 |
-| Backend | Spring Boot 3.2 (Java 17), Spring Security + JWT (jjwt 0.12), Spring Data JPA, WebSocket/STOMP, Bucket4j rate limit, Actuator |
-| Database | H2 in-memory (default dev), MySQL 8 (docker-compose) |
-| AI service | Python 3.11, FastAPI, Uvicorn |
-| CI / Hosting | GitHub Actions, Vercel (frontend) |
+| UI | Next.js 16.3 (App Router, static export), React 19, TypeScript 5, Tailwind CSS 4, Recharts, Radix Dialog, lucide icons, next-themes |
+| State | Zustand (session + household ledger) |
+| Backend | Supabase: Postgres 17, Auth, Realtime, Row Level Security, PL/pgSQL functions |
+| Android | Capacitor 8 (`app.kinfold.mobile`, minSdk 24, targetSdk 36) |
+| Quality | Vitest (30 tests), ESLint (Next + TypeScript + React Hooks, strict), TypeScript strict, GitHub Actions, Dependabot |
+| Hosting | Vercel (web), Supabase (data), GitHub Actions artifacts (APK) |
 
----
-
-## 4. Repository layout
+## Repository layout
 
 ```
-ManaKhata/
-├── frontend/                  # Next.js app (web) + Capacitor Android project
-│   ├── src/
-│   │   ├── app/
-│   │   │   ├── (dashboard)/   # all signed-in screens + layout (sidebar, top bar, bottom tabs)
-│   │   │   ├── auth/          # login, register
-│   │   │   ├── globals.css    # "Ledger" theme tokens and component classes
-│   │   │   └── layout.tsx     # fonts, theme provider, toasts, NativeBridge
-│   │   ├── components/        # UI components, StatementDownloader, NativeBridge (Android glue)
-│   │   ├── lib/api.ts         # API client + demo-mode data
-│   │   ├── store/authStore.ts # session (Zustand, persisted)
-│   │   └── hooks/, constants/, types/
-│   ├── android/               # generated Capacitor Android project (commit it)
-│   ├── assets/                # source images for the Android icon/splash
-│   ├── scripts/build-android.mjs
-│   ├── capacitor.config.ts
-│   └── next.config.js
-├── backend/                   # Spring Boot API
-│   └── src/main/java/com/manaKhata/
-│       ├── auth/  household/  expense/  reimbursement/  budget/  asset/ (vehicles)
-│       ├── goal/  grocery/  chore/  trip/  investment/  medical/  tax/  gamification/
-│       ├── ai/  analytics/  backup/
-│       └── config/            # security, CORS, WebSocket, rate limit, seed data
-├── ai-service/                # FastAPI microservice
-├── docker-compose.yml         # MySQL + backend + frontend + AI service
-├── .github/workflows/ci.yml   # backend tests, frontend checks, Android APK
-├── AUDIT.md                   # audit report and open issues
-└── run.bat                    # Windows one-click launcher
+ManaKhata/                       ← repository (product name: Kinfold)
+├── frontend/                    ← the Kinfold app (web + Android)
+│   ├── src/app/                 ← routes: / (landing), /demo, /auth/*, /onboarding, /terms, /privacy
+│   │   └── (dashboard)/         ← signed-in app: dashboard, expenses, budget, bills, splits, …
+│   ├── src/components/          ← UI kit (ui.tsx), shell nav, quick-add modal, logo, legal layout
+│   ├── src/lib/
+│   │   ├── finance.ts           ← calculation engine (+ finance.test.ts)
+│   │   ├── backend.ts           ← LiveBackend (Supabase) and DemoBackend (+ backend.test.ts)
+│   │   ├── demo-seed.ts         ← the demo family, generated relative to today
+│   │   ├── model.ts             ← row types mirroring the database
+│   │   ├── money.ts             ← paise-exact arithmetic, formatting, dates
+│   │   └── categories.ts, config.ts, supabase.ts, download.ts
+│   ├── src/store/               ← session.ts (auth/demo/onboarding), ledger.ts (data + realtime)
+│   ├── android/                 ← Capacitor Android project (committed)
+│   ├── assets/                  ← icon/splash sources for Android
+│   └── scripts/build-android.mjs
+├── supabase/migrations/         ← complete database schema, RLS and functions (apply in order)
+├── legacy/                      ← v1 Spring Boot API, Python AI service, docker-compose (unused)
+├── docs/archive/                ← v1 notes
+├── .github/                     ← CI, Dependabot, issue/PR templates
+├── AUDIT.md  CHANGELOG.md  CONTRIBUTING.md  SECURITY.md  CODE_OF_CONDUCT.md  LICENSE
 ```
 
----
+## Run locally
 
-## 5. Run it locally
-
-### 5.0 Prerequisites
-
-| Tool | Version | Needed for |
-|---|---|---|
-| Node.js | **20.9+** (22 recommended) | frontend |
-| Java (JDK) | **17** | backend |
-| Maven | 3.9 (or use the bundled `maven/` folder / `run.bat`) | backend |
-| Python | 3.11+ | AI service (optional) |
-| Docker Desktop | recent | option C only |
-| Android Studio / JDK 21 + Android SDK | — | building the Android app locally |
-
-### Option A — Frontend only (2 minutes, no backend)
+**Requirements:** Node.js 20.9+ (22 recommended). Nothing else for the web app.
 
 ```bash
 cd frontend
@@ -162,310 +134,156 @@ npm install
 npm run dev
 ```
 
-Open http://localhost:3000 and sign in with a demo account. With no API running, the app automatically uses demo data.
+Open <http://localhost:3000>:
 
-To force pure demo mode (exactly like the hosted site), create `frontend/.env.local` with `NEXT_PUBLIC_DEMO_MODE=true`.
+- **Try the demo** works immediately (no account, no network).
+- **Create account** uses the live Kinfold Supabase project. Confirmation emails link to `NEXT_PUBLIC_SITE_URL`; set it to `http://localhost:3000` in `frontend/.env.local` while developing (and add that URL in Supabase → Auth → URL configuration).
 
-### Option B — Full stack (frontend + backend)
+### Use your own Supabase project (optional)
 
-**1. Backend** (terminal 1):
+1. Create a project at [supabase.com](https://supabase.com) (free tier is enough).
+2. Apply the SQL files in [`supabase/migrations/`](supabase/migrations) **in order** (SQL editor, or `supabase db push` with the CLI).
+3. Put your project URL and **publishable** key in `frontend/.env.local` (see [Configuration](#configuration)).
+4. In Supabase → Authentication → URL configuration set **Site URL** and add your site to **Redirect URLs**.
 
-```bash
-cd backend
-mvn spring-boot:run
-```
+## Configuration
 
-On Windows without Maven installed, use the bundled copy:
+All values are optional — defaults live in [`frontend/src/lib/config.ts`](frontend/src/lib/config.ts) and point to the official Kinfold project.
 
-```powershell
-cd backend
-..\maven\apache-maven-3.9.6\bin\mvn.cmd spring-boot:run
-```
+| Variable | Default | Purpose |
+|---|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | Kinfold project | Supabase API URL |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Kinfold publishable key | Public client key (safe to ship; RLS protects data) |
+| `NEXT_PUBLIC_SITE_URL` | `https://frontend-phi-lemon-1hkzt9uj98.vercel.app` | Where email confirmation / reset links send people |
+| `BUILD_TARGET` | — | `android` = static export to `out/` (set by `npm run build:android`) |
 
-Wait for `Started ManaKhataApplication`, then check http://localhost:8080/actuator/health → `{"status":"UP"}`.
-The backend uses an **in-memory H2 database** seeded with the demo household on every start.
+**Supabase dashboard settings (one-time, by the project owner):**
 
-**2. Frontend** (terminal 2):
-
-```bash
-cd frontend
-cp .env.example .env.local     # NEXT_PUBLIC_API_URL=http://localhost:8080, DEMO_MODE=false
-npm install
-npm run dev
-```
-
-Sign in with `demo@manaKhata.app` / `Demo@1234` — this now signs in against the real API. Anything you add is saved until the backend restarts.
-
-**3. AI service** (optional, terminal 3):
-
-```bash
-cd ai-service
-python -m venv .venv && . .venv/bin/activate     # Windows: .venv\Scripts\activate
-pip install -r requirements.txt
-uvicorn main:app --reload --port 8000
-```
-
-**Windows shortcut:** `run.bat` frees ports 3000/8080/8000 and starts all three in separate windows.
-
-### Option C — Docker Compose (MySQL + everything)
-
-```bash
-cp .env.example .env            # then set a long random JWT_SECRET
-docker compose up --build
-```
-
-| Service | URL |
+| Setting | Value |
 |---|---|
-| Frontend | http://localhost:3000 |
-| API | http://localhost:8080 (health: `/actuator/health`) |
-| AI service | http://localhost:8000/health |
-| MySQL | `localhost:3306`, db `manaKhata`, user `manauser` / `manapass` |
+| Auth → URL configuration → Site URL | `https://frontend-phi-lemon-1hkzt9uj98.vercel.app` |
+| Auth → URL configuration → Redirect URLs | `https://frontend-phi-lemon-1hkzt9uj98.vercel.app/**`, `http://localhost:3000/**` |
+| Auth → Email → SMTP (recommended for launch) | A real SMTP provider (Resend, SES, Brevo…). The built-in sender is limited to a few emails per hour. |
+| Auth → Emails → Templates (optional) | Kinfold-branded confirmation and reset emails |
 
----
+## Android app
 
-## 6. Configuration (environment variables)
+The Android app is the same UI packaged with Capacitor. It talks to the same Supabase project as the website, so a
+family can mix phones and laptops freely.
 
-### Frontend (`frontend/.env.local`, Vercel project settings, or Docker build args)
+**Get an APK without installing anything:** every push to `main` runs **Actions → CI → Android app** and uploads
+**`kinfold-android-debug-apk`** as a downloadable artifact. Copy it to your phone and open it (allow “Install unknown apps”).
 
-`NEXT_PUBLIC_*` values are baked in **at build time** — rebuild after changing them.
-
-| Variable | Default | Meaning |
-|---|---|---|
-| `NEXT_PUBLIC_API_URL` | `http://localhost:8080` | Base URL of the Spring Boot API (also used for the WebSocket `…/ws`) |
-| `NEXT_PUBLIC_DEMO_MODE` | `false` | `true` = never call the API; demo accounts + built-in data only |
-| `NEXT_PUBLIC_APP_NAME` | `ManaKhata` | Display name |
-| `BUILD_TARGET` | — | `android` = static export to `out/` (set automatically by `npm run build:android`) |
-
-### Backend (environment or `application.yml`)
-
-| Variable | Default | Meaning |
-|---|---|---|
-| `PORT` | `8080` | HTTP port |
-| `SPRING_DATASOURCE_URL` | H2 in-memory | JDBC URL, e.g. `jdbc:mysql://host:3306/manaKhata?useSSL=false&serverTimezone=Asia/Kolkata` |
-| `SPRING_DATASOURCE_DRIVER` | `org.h2.Driver` | Use `com.mysql.cj.jdbc.Driver` for MySQL |
-| `SPRING_DATASOURCE_USERNAME` / `_PASSWORD` | `sa` / empty | DB credentials |
-| `JPA_DDL_AUTO` | `update` | Hibernate schema mode |
-| `JPA_OPEN_IN_VIEW` | `true` | Keep `true` until DTOs land (AUDIT O-15) |
-| `JWT_SECRET` | dev default ⚠️ | **Always set in production** (≥ 32 chars) |
-| `CORS_ALLOWED_ORIGINS` | `http://localhost:3000,http://localhost:3001` | Exact origins allowed to call the API — add your Vercel URL |
-| `CORS_ALLOWED_ORIGIN_PATTERNS` | localhost ports, `https://localhost`, `capacitor://localhost` | Wildcard origins (the Android app is `https://localhost`) |
-| `H2_CONSOLE_ENABLED` | `true` | Set `false` outside development |
-| `AI_SERVICE_URL` | `http://localhost:8000` | FastAPI service |
-| `LOG_LEVEL` | `INFO` | `com.manaKhata` log level |
-
-### Docker Compose (`.env` in the repo root)
-
-| Variable | Meaning |
-|---|---|
-| `JWT_SECRET` | **Required.** Compose refuses to start without it. |
-
-### AI service
-
-| Variable | Default | Meaning |
-|---|---|---|
-| `CORS_ALLOWED_ORIGINS` | `http://localhost:3000,http://localhost:8080` | Allowed origins |
-| `ENABLE_DOCS` | `true` | Serve Swagger UI at `/docs` |
-| `LOG_LEVEL` | `info` | Log level |
-
----
-
-## 7. Android app
-
-The Android app is the same Next.js UI exported as static files and packaged with Capacitor. Android-specific touches: bottom tab bar, hardware **back button** (goes back; exits from the dashboard), status bar that follows the theme, ledger app icon and splash screen.
-
-### 7.1 Get the APK without installing anything (CI)
-
-1. Push to `main` (or any `fix/**`, `feat/**` branch) or run **Actions → CI → Run workflow**.
-2. Open the finished run → **Artifacts** → download **`manakhata-debug-apk`**.
-3. Copy the `.apk` to your phone and open it (allow "Install unknown apps" for your file manager).
-
-By default the CI APK is the **offline demo app**. To make it talk to a deployed API, set a repository variable **`ANDROID_API_URL`** (Settings → Secrets and variables → Actions → Variables), e.g. `https://api.yourdomain.com`.
-
-### 7.2 Build it yourself
-
-Requirements: **JDK 21** and the **Android SDK** (easiest: install Android Studio).
+**Build it yourself** (needs JDK 21 + Android SDK, e.g. via Android Studio):
 
 ```bash
 cd frontend
 npm install
-npm run build:android          # static export -> out/ -> copied into android/
-npm run android:open           # opens Android Studio -> Run ▶ on a device/emulator
+npm run build:android        # static export → out/ → copied into android/
+npm run android:open         # opens Android Studio → Run ▶
+# or: cd android && ./gradlew assembleDebug   → android/app/build/outputs/apk/debug/
 ```
 
-Or build an APK from the command line:
+Native touches: hardware back button (exits from Home), status bar follows light/dark, Kinfold icon and splash.
+To refresh icons, edit `frontend/assets/*` and run `npx @capacitor/assets generate --android`.
+Play Store release signing is not set up yet (see AUDIT.md).
 
-```bash
-cd frontend/android
-./gradlew assembleDebug        # Windows: gradlew.bat assembleDebug
-```
+**PWA:** on Android Chrome open the website → ⋮ → *Install app*.
 
-The APK is written to `frontend/android/app/build/outputs/apk/debug/app-debug.apk`.
+## Deployment
 
-### 7.3 Pointing the Android app at a real backend
+| Piece | Where | How it updates |
+|---|---|---|
+| Website | Vercel project **`manakata`** → <https://frontend-phi-lemon-1hkzt9uj98.vercel.app> | Vercel Git integration on `main` (root directory `frontend`). Manual: `cd frontend && vercel deploy --prod`. |
+| Database | Supabase project **Kinfold** (`lpqbtssvotkvogqmzohv`, ap-south-1) | Add a new file in `supabase/migrations/` and apply it (dashboard SQL editor or `supabase db push`). Never edit applied migrations. |
+| Android | GitHub Actions artifact | Automatic on every push. |
 
-```bash
-NEXT_PUBLIC_API_URL=https://api.yourdomain.com npm run build:android
-```
+> ⚠️ **Vercel Hobby plan:** Vercel only builds commits whose author can deploy to the project. If a Git deploy shows
+> **Blocked**, either the commit author must be the Vercel account owner, or the project must move to a Pro team.
 
-- When `NEXT_PUBLIC_API_URL` is set, demo mode is turned **off** automatically (override with `NEXT_PUBLIC_DEMO_MODE`).
-- The app runs at `https://localhost` inside the WebView, so the API **must be HTTPS** (Android blocks plain-HTTP calls from an HTTPS page). The backend already allows `https://localhost` in CORS.
-- For quick tests against a laptop backend, expose it over HTTPS with a tunnel (e.g. `cloudflared tunnel --url http://localhost:8080`) and use that URL.
+## Data model & security
 
-### 7.4 Updating icons / splash
+The schema ([`supabase/migrations/20261002000000_kinfold_schema.sql`](supabase/migrations/20261002000000_kinfold_schema.sql)) has
+`profiles`, `households`, `household_members` and 21 household-scoped tables (expenses, incomes, splits, settlements,
+reimbursements, budgets, recurring bills, wallet transactions, goals, contributions, grocery lists/items, chores, chat,
+vehicles, vehicle expenses, trips, trip expenses, investments, insurance policies, tax documents).
 
-Edit `frontend/assets/icon-only.png`, `icon-foreground.png`, `icon-background.png`, `splash.png`, `splash-dark.png`, then:
+- **Row Level Security on every table.** A user can only read or write rows whose `household_id` is their household.
+- **Private expenses** are visible only to the person who paid or recorded them — enforced in the database.
+- **Integrity triggers** reject rows that reference people or parent records from another household.
+- **Privileged actions run as SQL functions** that re-check the caller’s role: `create_household`, `join_household`,
+  `update_member`, `remove_member`, `transfer_headship`, `regenerate_invite_code`, `decide_reimbursement`,
+  `set_chore_status`, `wallet_top_up/transfer/withdraw` (no overdrafts, row-locked), `settle_up`, `pay_bill`, `delete_my_account`.
+- **Account deletion** erases personal records and the login; if shared history must remain for the family, the login is anonymised and disabled instead.
+- Amounts are `numeric(14,2)` in the database and summed as **integer paise** in the app.
+
+## How the numbers are calculated
+
+| Figure | Formula |
+|---|---|
+| Household spent (month) | Σ shared expenses dated in the month |
+| Your share | Σ what you paid − Σ others’ split shares owed to you + Σ your split shares owed to others |
+| Income (month) | each member’s monthly income (from the month they joined) + extra income entries |
+| Savings rate | (income − spent) ÷ income |
+| Budget projection | spent so far ÷ day of month × days in month |
+| Balances / settle-up | net open splits per person; greedy largest-debtor ↔ largest-creditor matching (≤ n−1 payments) |
+| Monthly bill load | Σ bills normalised: weekly × 52/12, quarterly ÷ 3, yearly ÷ 12 |
+| Goal monthly target | remaining ÷ months left to target date (rounded up to the paisa) |
+| Trip spend | Σ amount × exchange rate into the trip’s base currency |
+| Mileage | (last − first odometer at fill-ups) ÷ litres bought after the first fill |
+| CAGR | (current ÷ invested)^(1/years) − 1, only for holdings ≥ 1 year old |
+| Tax eligible | min(claimed, legal limit) per section; tax saved = eligible × slab × 1.04 cess |
+| Health score | 30% savings rate (target 30%), 25% emergency fund (target 6 months), 15% budget discipline, 15% spending stability (coefficient of variation), 15% protection (health cover + life cover ÷ 10× income) |
+| Forecast | weighted average of the last 3 complete months, 3 : 2 : 1 |
+
+All of the above are unit-tested in [`finance.test.ts`](frontend/src/lib/finance.test.ts).
+
+## Design system
+
+**Indigo & Saffron.** Indigo for trust and structure, saffron for warmth and highlights; green/red reserved for money in/out.
+
+| Token | Light | Dark |
+|---|---|---|
+| Background | `#F6F7FB` | `#0A0E1C` (deep night-indigo) |
+| Surface | `#FFFFFF` | `#121831` |
+| Text | `#141A2E` | `#EEF0FA` |
+| Primary (indigo) | `#3B4BC8` | `#8C9BFF` |
+| Highlight (saffron) | `#E59A1C` | `#F4B850` |
+| Positive / negative | `#16855A` / `#CC3B2B` | `#4ACB8F` / `#FF7D6E` |
+
+Plus Jakarta Sans for headings, Inter for text, tabular numbers everywhere. Signature detail: a small saffron
+“fold” on featured cards, echoing the logo. Tokens live in [`globals.css`](frontend/src/app/globals.css) and are exposed as Tailwind colours (`bg-surface`, `text-ink-2`, `bg-primary`, …).
+
+## Testing
 
 ```bash
 cd frontend
-npx @capacitor/assets generate --android --iconBackgroundColor '#1f7a57' --splashBackgroundColor '#f5f2ea' --splashBackgroundColorDark '#141714'
+npm run typecheck     # TypeScript strict
+npm run lint          # ESLint (Next.js + TypeScript + React Hooks), no rules disabled
+npm run test:run      # 30 Vitest tests: calculation engine + demo business rules
+npm run build         # production build (Vercel)
+npm run build:android # Android static bundle + Capacitor sync
 ```
 
-### 7.5 Play Store release
+The database rules were verified against the live project with two signed-in test users (household creation and joining,
+private-expense isolation, role checks, wallet overdraft protection, settle-up, bill payment, budget uniqueness,
+cross-household writes, realtime delivery, account deletion) — see AUDIT.md §3.
 
-Not configured yet (CI builds a debug APK). Create an upload keystore, add signing config to `android/app/build.gradle`, store the keystore as a GitHub secret and add a `bundleRelease` step — tracked as AUDIT O-25.
+## Troubleshooting
 
-### 7.6 Install as a PWA instead
-
-On Android Chrome, open the web app → menu ⋮ → **Install app**. It opens full-screen with the same icon and theme colours.
-
----
-
-## 8. Deploying
-
-### 8.1 Frontend on Vercel (current setup)
-
-The live demo is the Vercel project **`manakata`** (team *iragavarapunagaatchutaneelima's projects*), which owns the domain `frontend-phi-lemon-1hkzt9uj98.vercel.app`. `frontend/.vercel/project.json` links the folder to it.
-
-| Vercel setting | Value |
+| Problem | Fix |
 |---|---|
-| Framework | Next.js |
-| Root directory | `frontend` (when connected to Git) |
-| Environment variables | `NEXT_PUBLIC_DEMO_MODE=true` (Production + Preview) — already set |
+| Confirmation email link opens `localhost` | Set Site URL and Redirect URLs in Supabase (see [Configuration](#configuration)). |
+| “Email not confirmed” when signing in | Open the link in the confirmation email (check spam). |
+| Sign-up emails stop arriving | Supabase’s built-in sender is rate-limited; configure custom SMTP. |
+| “You don’t have permission to do that” | Your role can’t do this (e.g. students can’t approve). Ask the head/parent. |
+| “Not enough balance in your wallet” | Add money to the wallet first — wallets can’t go negative. |
+| Demo shows old data | Settings → Reset demo data (the demo also refreshes each new month). |
+| Vercel deployment “Blocked” | Hobby plan restriction on commit authors — see [Deployment](#deployment). |
 
-Deploy manually from the CLI:
+## Contributing, security & licence
 
-```bash
-cd frontend
-vercel deploy --prod
-```
-
-> ⚠️ **Hobby plan gotcha:** Vercel blocks a CLI deploy when the latest git commit's author email is not a member of the Vercel team (`TEAM_ACCESS_REQUIRED`). Make sure `git config user.email` is your real GitHub/Vercel email, or connect the project to the GitHub repo (Project → Settings → Git) so deploys come from GitHub automatically.
-
-When a public backend exists, change the Vercel env vars to `NEXT_PUBLIC_DEMO_MODE=false` and `NEXT_PUBLIC_API_URL=https://<your-api>` and redeploy.
-
-### 8.2 Backend
-
-Any Docker host works (Render, Railway, Fly.io, a VM):
-
-```bash
-docker build -t manakhata-api ./backend
-docker run -p 8080:8080 \
-  -e SPRING_DATASOURCE_URL='jdbc:mysql://<host>:3306/manaKhata?useSSL=true' \
-  -e SPRING_DATASOURCE_DRIVER=com.mysql.cj.jdbc.Driver \
-  -e SPRING_DATASOURCE_USERNAME=... -e SPRING_DATASOURCE_PASSWORD=... \
-  -e JWT_SECRET='<long random string>' \
-  -e CORS_ALLOWED_ORIGINS='https://frontend-phi-lemon-1hkzt9uj98.vercel.app' \
-  -e H2_CONSOLE_ENABLED=false \
-  manakhata-api
-```
-
-Read AUDIT.md §5 (P0 items) before exposing the backend publicly.
-
----
-
-## 9. API reference
-
-All endpoints return `{ success, message, data, timestamp }`. Everything except `/api/auth/**` and `/actuator/health` needs `Authorization: Bearer <token>` (a missing/expired token returns **401**).
-
-| Module | Endpoints |
-|---|---|
-| Auth | `POST /api/auth/register` · `POST /api/auth/login` · `POST /api/auth/refresh` |
-| Household | `GET /api/household` · `PUT /api/household` · `GET /api/household/members` · `PATCH /api/household/members/{id}/permissions` · `POST /api/household/wallet/allocate` |
-| Expenses | `GET /api/expenses` · `GET /api/expenses/household` · `GET /api/expenses/summary` · `POST /api/expenses` · `PUT /api/expenses/{id}` · `DELETE /api/expenses/{id}` |
-| Splits | `GET /api/splits` · `GET /api/splits/i-owe` · `GET /api/splits/owed-to-me` · `POST /api/splits` · `PATCH /api/splits/{id}/settle` |
-| Reimbursements | `GET /api/reimbursements` · `GET /api/reimbursements/summary` · `POST /api/reimbursements` · `PATCH /api/reimbursements/{id}/approve` · `…/reject` · `…/settle` |
-| Budgets | `GET /api/budgets` · `GET /api/budgets/household` · `POST /api/budgets` · `PUT /api/budgets/{id}` · `DELETE /api/budgets/{id}` |
-| Vehicles | `GET /api/vehicles` · `GET /api/vehicles/{id}` · `POST /api/vehicles` · `POST /api/vehicles/{id}/expenses` · `DELETE /api/vehicles/{id}` |
-| Trips | `GET /api/trips` · `POST /api/trips` · `GET /api/trips/{id}/expenses` · `POST /api/trips/{id}/expenses` |
-| Groceries | `GET /api/grocery` · `POST /api/grocery` · `POST /api/grocery/{listId}/items` · `PATCH /api/grocery/items/{id}/check` · `PATCH /api/grocery/{listId}/complete` · `DELETE /api/grocery/{listId}` · `DELETE /api/grocery/items/{id}` |
-| Chores | `GET /api/chores` · `POST /api/chores` · `PATCH /api/chores/{id}/status` |
-| Goals | `GET /api/goals` · `POST /api/goals` · `POST /api/goals/{id}/contribute` |
-| Investments · Medical · Tax | `GET/POST /api/investments` · `GET/POST /api/medical/policies` · `GET/POST /api/tax` |
-| Badges | `GET /api/badges` · `POST /api/badges` |
-| AI & analytics | `GET /api/ai/insights` · `/api/ai/health-score` · `/api/ai/predictions` · `/api/ai/investments` · `GET /api/analytics/household` · `/api/analytics/personal` |
-| Realtime | STOMP over WebSocket at `/ws` (SockJS fallback `/ws-sockjs`), topic `/topic/household/{id}` |
-
-Quick check with curl:
-
-```bash
-curl -s -X POST localhost:8080/api/auth/login -H 'Content-Type: application/json' \
-  -d '{"email":"demo@manaKhata.app","password":"Demo@1234"}'
-```
-
----
-
-## 10. Design system — the "Ledger" theme
-
-A deliberately plain look modelled on a paper *khata* book:
-
-| Token | Light | Dark | Use |
-|---|---|---|---|
-| `--bg-primary` | `#f5f2ea` paper | `#141714` | page background |
-| `--bg-card` | `#fffdf8` | `#1b1f1b` | cards, inputs |
-| `--text-primary` | `#1d2320` ink | `#ebe9e1` | body text |
-| `--accent` | `#1f7a57` ledger green | `#5fbf93` | buttons, active nav, links |
-| `--rule` / `--margin-rule` | `#c9bfa8` / `#c2453c` | | ledger rulings, red margin line |
-| `--positive` / `--negative` / `--warning` | green / red / amber | | money in / out / alerts |
-
-- **Type:** Fraunces (serif) for headings, Inter for text, tabular numbers everywhere so amounts line up.
-- **Surfaces:** flat cards with a 1 px border — no glass, glows or animated backgrounds.
-- **Signature details:** double rule under the top bar; the app icon's red margin line.
-- Tokens live in `frontend/src/app/globals.css`; Tailwind's `brand-*` colours map to the accent scale via `@theme`; chart colours come from `src/constants/theme.ts`.
-
----
-
-## 11. Testing & quality checks
-
-```bash
-# frontend
-cd frontend
-npm run typecheck
-npm run lint
-npm run test:run
-npm run build
-
-# backend
-cd backend
-mvn test
-```
-
-CI (`.github/workflows/ci.yml`) runs all of the above on every push/PR and then builds the Android APK.
-
----
-
-## 12. Troubleshooting
-
-| Symptom | Fix |
-|---|---|
-| Vercel shows `404 DEPLOYMENT_NOT_FOUND` | No production deployment exists — redeploy (`vercel deploy --prod` from `frontend/`). |
-| Vercel deployment stuck as **Blocked** | Commit author isn't on the Vercel team — see the gotcha in [§8.1](#81-frontend-on-vercel-current-setup). |
-| `vercel deploy` hangs on upload | `frontend/.vercelignore` must exclude `.next`, `node_modules`, `android`, `out` (it does — don't delete it). |
-| Signed in as a demo user but numbers don't change after edits | You are in demo mode (hosted site / Android default). Run the backend locally for persistence. |
-| Wrong password message says "Server is offline" | The API at `NEXT_PUBLIC_API_URL` is unreachable — start the backend or enable demo mode. |
-| Windows: "port 8080 is reserved/in use" | A previous Java process is still running: `netstat -ano \| findstr :8080`, then `taskkill /PID <pid> /F`, or run `run.bat`. |
-| Android app can't reach your API | The API must be **HTTPS** and listed in CORS; see [§7.3](#73-pointing-the-android-app-at-a-real-backend). |
-| `docker compose up` fails with "JWT_SECRET is missing" | Copy `.env.example` to `.env` and set it. |
-| Gradle: "Unsupported class file major version" | Android builds need **JDK 21** (backend still uses 17). |
-
----
-
-## 13. Contributing
-
-1. Branch from `main`: `git checkout -b feat/<short-name>`.
-2. Pick an item from **[AUDIT.md](AUDIT.md) §5** (reference its ID, e.g. *O-06*, in your PR).
-3. Run the checks in [§11](#11-testing--quality-checks).
-4. Open a PR — CI must be green. Keep UI changes within the Ledger theme tokens.
-
-## License
-
-[MIT](LICENSE) © 2026 ManaKhata contributors
+- Read [CONTRIBUTING.md](CONTRIBUTING.md) and the [Code of Conduct](CODE_OF_CONDUCT.md). Open items are tracked in [AUDIT.md](AUDIT.md).
+- Report vulnerabilities privately as described in [SECURITY.md](SECURITY.md).
+- Code is released under the [MIT Licence](LICENSE). Use of the hosted service is governed by the in-app [Terms](https://frontend-phi-lemon-1hkzt9uj98.vercel.app/terms) and [Privacy Policy](https://frontend-phi-lemon-1hkzt9uj98.vercel.app/privacy).
+- Kinfold gives no financial, investment or tax advice; all insights are educational estimates from your own data.

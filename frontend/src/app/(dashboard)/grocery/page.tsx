@@ -1,380 +1,165 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import {
-  ShoppingCart, Plus, CheckCircle2, Circle, Trash2, ShoppingBag,
-  ChevronDown, ChevronUp, Loader2, X, Receipt
-} from 'lucide-react'
-import api from '@/lib/api'
-import { formatCurrency } from '@/hooks/useUtils'
-import { useAuthStore } from '@/store/authStore'
-import toast from 'react-hot-toast'
-import AddExpenseModal from '@/components/ui/AddExpenseModal'
+import { useMemo, useState } from 'react'
+import { Check, ChevronDown, Plus, ShoppingCart, Trash2 } from 'lucide-react'
+import { Badge, Button, Card, EmptyState, Field, IconButton, Modal, PageHeader, Progress, confirmAction, cx } from '@/components/ui'
+import { useHousehold } from '@/store/ledger'
+import { formatDate, formatMoney, parseMoney, sumMoney, today } from '@/lib/money'
+import type { GroceryItem, GroceryList } from '@/lib/model'
 
-interface GroceryItem {
-  id: number
-  name: string
-  quantity?: number
-  unit?: string
-  estimatedPrice?: number
-  isChecked: boolean
-  category?: string
-}
+export default function GroceryPage() {
+  const { data, currency, firstName, mutate } = useHousehold()
+  const [newList, setNewList] = useState('')
+  const [checkout, setCheckout] = useState<GroceryList | null>(null)
+  const [showDone, setShowDone] = useState(false)
 
-interface GroceryList {
-  id: number
-  name: string
-  isCompleted: boolean
-  createdBy: { id: number; fullName: string }
-  createdAt: string
-  items: GroceryItem[]
-}
+  const lists = useMemo(() => {
+    if (!data) return { active: [], done: [] }
+    const withItems = data.groceryLists.map((l) => {
+      const items = data.groceryItems.filter((i) => i.list_id === l.id).sort((a, b) => Number(a.is_checked) - Number(b.is_checked) || a.created_at.localeCompare(b.created_at))
+      return { list: l, items, estimate: sumMoney(items, (i) => i.estimated_price), checked: items.filter((i) => i.is_checked).length }
+    }).sort((a, b) => b.list.created_at.localeCompare(a.list.created_at))
+    return { active: withItems.filter((x) => !x.list.completed_at), done: withItems.filter((x) => x.list.completed_at) }
+  }, [data])
 
-export default function GroceryListPage() {
-  const { user } = useAuthStore()
-  const [lists, setLists] = useState<GroceryList[]>([])
-  const [loading, setLoading] = useState(true)
-  const [expandedId, setExpandedId] = useState<number | null>(null)
-  const [showNewList, setShowNewList] = useState(false)
-  const [newListName, setNewListName] = useState('')
-  const [newItem, setNewItem] = useState({ name: '', quantity: '', unit: 'pcs', estimatedPrice: '', category: '' })
-  const [addingToList, setAddingToList] = useState<number | null>(null)
-  const [checkoutList, setCheckoutList] = useState<GroceryList | null>(null)
+  if (!data) return null
 
-  useEffect(() => { loadLists() }, [])
-
-  const loadLists = async () => {
-    setLoading(true)
-    try {
-      const res = await api.getGroceryLists()
-      if (res.success) setLists(res.data)
-    } finally { setLoading(false) }
+  async function createList() {
+    if (!newList.trim()) return
+    const ok = await mutate((b) => b.insert('groceryLists', { name: newList.trim() }), 'List created')
+    if (ok) setNewList('')
   }
-
-  const handleCreateList = async () => {
-    if (!newListName.trim()) return
-    try {
-      const res = await api.createGroceryList(newListName)
-      if (res.success) {
-        setLists(prev => [res.data, ...prev])
-        setNewListName('')
-        setShowNewList(false)
-        setExpandedId(res.data.id)
-        toast.success('List created!')
-      }
-    } catch { toast.error('Failed to create list') }
-  }
-
-  const handleToggleItem = async (listId: number, itemId: number) => {
-    setLists(prev => prev.map(l => l.id === listId
-      ? { ...l, items: l.items.map(i => i.id === itemId ? { ...i, isChecked: !i.isChecked } : i) }
-      : l
-    ))
-    try { await api.toggleGroceryItem(itemId) } catch { /* revert on error */ loadLists() }
-  }
-
-  const handleAddItem = async (listId: number) => {
-    if (!newItem.name.trim()) return
-    try {
-      const res = await api.addGroceryItem(listId, {
-        name: newItem.name,
-        quantity: newItem.quantity ? parseInt(newItem.quantity) : 1,
-        unit: newItem.unit,
-        estimatedPrice: newItem.estimatedPrice ? parseFloat(newItem.estimatedPrice) : undefined,
-        category: newItem.category,
-      })
-      if (res.success) {
-        setLists(prev => prev.map(l => l.id === listId
-          ? { ...l, items: [...l.items, res.data] }
-          : l
-        ))
-        setNewItem({ name: '', quantity: '', unit: 'pcs', estimatedPrice: '', category: '' })
-        setAddingToList(null)
-        toast.success('Item added!')
-      }
-    } catch { toast.error('Failed to add item') }
-  }
-
-  const handleCheckout = (list: GroceryList) => {
-    setCheckoutList(list)
-  }
-
-  const handleDeleteList = async (listId: number) => {
-    try {
-      await api.deleteGroceryList(listId)
-      setLists(prev => prev.filter(l => l.id !== listId))
-      toast.success('List deleted')
-    } catch { toast.error('Failed to delete list') }
-  }
-
-  const getListTotal = (list: GroceryList) =>
-    list.items.reduce((acc, i) => acc + ((i.estimatedPrice || 0) * (i.quantity || 1)), 0)
-
-  const getCheckedTotal = (list: GroceryList) =>
-    list.items.filter(i => i.isChecked).reduce((acc, i) => acc + ((i.estimatedPrice || 0) * (i.quantity || 1)), 0)
-
-  if (loading) return (
-    <div className="max-w-3xl mx-auto space-y-4">
-      {[1, 2].map(i => <div key={i} className="skeleton h-32 rounded-2xl" />)}
-    </div>
-  )
 
   return (
-    <div className="max-w-3xl mx-auto space-y-5">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="font-display font-bold text-2xl" style={{ color: 'var(--text-primary)' }}>
-            🛒 Grocery Lists
-          </h1>
-          <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>
-            Collaborative household shopping — shared in real-time
-          </p>
-        </div>
-        <button
-          onClick={() => setShowNewList(true)}
-          className="btn-primary flex items-center gap-2"
-        >
-          <Plus size={16} /> New List
-        </button>
-      </div>
+    <div>
+      <PageHeader title="Groceries" subtitle="Shared shopping lists. Tick items in the shop — everyone sees it live." />
 
-      {/* New List form */}
-      <AnimatePresence>
-        {showNewList && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            className="glass-card p-4 border border-brand-500/30"
-          >
-            <div className="flex gap-3">
-              <input
-                autoFocus
-                type="text"
-                value={newListName}
-                onChange={e => setNewListName(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && handleCreateList()}
-                className="input-field flex-1"
-                placeholder="e.g. Weekly Vegetables, Party Supplies…"
-              />
-              <button onClick={handleCreateList} className="btn-primary px-5">Create</button>
-              <button onClick={() => setShowNewList(false)} className="btn-ghost">
-                <X size={16} />
-              </button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <form onSubmit={(e) => { e.preventDefault(); createList() }} className="mb-5 flex gap-2">
+        <input className="field max-w-sm" placeholder="New list name, e.g. Weekend market" maxLength={80} value={newList} onChange={(e) => setNewList(e.target.value)} />
+        <Button type="submit" icon={<Plus size={16} />} disabled={!newList.trim()}>Create</Button>
+      </form>
 
-      {/* Stats overview */}
-      {lists.length > 0 && (
-        <div className="grid grid-cols-3 gap-3">
-          {[
-            { label: 'Active Lists', value: lists.filter(l => !l.isCompleted).length, icon: '📋', color: 'text-brand-400' },
-            { label: 'Total Items', value: lists.reduce((a, l) => a + l.items.length, 0), icon: '📦', color: 'text-emerald-400' },
-            { label: 'Est. Budget', value: formatCurrency(lists.reduce((a, l) => a + getListTotal(l), 0)), icon: '💰', color: 'text-amber-400' },
-          ].map(stat => (
-            <div key={stat.label} className="glass-card p-4 text-center">
-              <div className="text-2xl mb-1">{stat.icon}</div>
-              <div className={`font-display font-bold text-lg ${stat.color}`}>{stat.value}</div>
-              <div className="text-xs" style={{ color: 'var(--text-muted)' }}>{stat.label}</div>
-            </div>
+      {lists.active.length ? (
+        <div className="grid gap-4 lg:grid-cols-2">
+          {lists.active.map(({ list, items, estimate, checked }) => (
+            <ListCard key={list.id} list={list} items={items} estimate={estimate} checked={checked} currency={currency} createdBy={firstName(list.created_by)}
+              onCheckout={() => setCheckout(list)}
+              onDelete={async () => {
+                if (await confirmAction({ title: `Delete “${list.name}”?`, body: 'All items on the list will be removed.', confirmLabel: 'Delete', danger: true }))
+                  mutate((b) => b.remove('groceryLists', list.id), 'List deleted')
+              }} />
           ))}
         </div>
-      )}
-
-      {/* Lists */}
-      {lists.length === 0 ? (
-        <div className="glass-card p-12 text-center">
-          <div className="text-5xl mb-3">🛒</div>
-          <p className="font-semibold" style={{ color: 'var(--text-primary)' }}>No grocery lists yet</p>
-          <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>Create your first list to get started!</p>
-        </div>
       ) : (
-        lists.map(list => {
-          const isExpanded = expandedId === list.id
-          const total = getListTotal(list)
-          const checkedTotal = getCheckedTotal(list)
-          const checkedCount = list.items.filter(i => i.isChecked).length
-          const progress = list.items.length > 0 ? (checkedCount / list.items.length) * 100 : 0
-
-          return (
-            <motion.div
-              key={list.id}
-              layout
-              className={`glass-card overflow-hidden ${list.isCompleted ? 'opacity-60' : ''}`}
-            >
-              {/* List header */}
-              <div
-                className="p-4 cursor-pointer flex items-center justify-between hover:bg-white/2 transition-colors"
-                onClick={() => setExpandedId(isExpanded ? null : list.id)}
-              >
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-xl flex-shrink-0 ${
-                    list.isCompleted ? 'bg-emerald-500/10' : 'bg-brand-500/10'
-                  }`}>
-                    {list.isCompleted ? '✅' : '🛒'}
-                  </div>
-                  <div className="min-w-0">
-                    <div className="font-semibold truncate" style={{ color: 'var(--text-primary)' }}>{list.name}</div>
-                    <div className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                      {list.items.length} items · by {list.createdBy.fullName} · est. {formatCurrency(total)}
-                    </div>
-                    {/* Progress bar */}
-                    <div className="mt-1.5 h-1.5 rounded-full bg-[var(--surface-2)] w-40">
-                      <div
-                        className="h-full rounded-full transition-all duration-500"
-                        style={{ width: `${progress}%`, background: progress === 100 ? '#10b981' : '#6366f1' }}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  <span className="text-xs font-medium px-2 py-0.5 rounded-full" style={{
-                    background: list.isCompleted ? 'rgba(16,185,129,0.1)' : 'rgba(99,102,241,0.1)',
-                    color: list.isCompleted ? '#10b981' : '#6366f1'
-                  }}>
-                    {checkedCount}/{list.items.length}
-                  </span>
-                  {!list.isCompleted && (
-                    <button
-                      onClick={e => { e.stopPropagation(); handleCheckout(list) }}
-                      className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 transition-all border border-emerald-500/20"
-                    >
-                      <Receipt size={12} /> Checkout
-                    </button>
-                  )}
-                  <button
-                    onClick={e => { e.stopPropagation(); handleDeleteList(list.id) }}
-                    className="p-1.5 rounded-lg text-rose-400 hover:bg-rose-500/10 transition-colors"
-                  >
-                    <Trash2 size={14} />
-                  </button>
-                  {isExpanded ? <ChevronUp size={16} style={{ color: 'var(--text-muted)' }} /> : <ChevronDown size={16} style={{ color: 'var(--text-muted)' }} />}
-                </div>
-              </div>
-
-              {/* Expanded items */}
-              <AnimatePresence>
-                {isExpanded && (
-                  <motion.div
-                    initial={{ height: 0 }} animate={{ height: 'auto' }} exit={{ height: 0 }}
-                    className="overflow-hidden border-t" style={{ borderColor: 'var(--border-color)' }}
-                  >
-                    <div className="p-4 space-y-2">
-                      {/* Items */}
-                      {list.items.map(item => (
-                        <div
-                          key={item.id}
-                          onClick={() => handleToggleItem(list.id, item.id)}
-                          className="flex items-center gap-3 p-3 rounded-xl cursor-pointer hover:bg-white/3 transition-colors"
-                        >
-                          {item.isChecked
-                            ? <CheckCircle2 size={20} className="text-emerald-400 flex-shrink-0" />
-                            : <Circle size={20} className="flex-shrink-0" style={{ color: 'var(--text-muted)' }} />
-                          }
-                          <div className={`flex-1 min-w-0 ${item.isChecked ? 'line-through opacity-50' : ''}`}>
-                            <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{item.name}</span>
-                            {item.quantity && (
-                              <span className="text-xs ml-2" style={{ color: 'var(--text-muted)' }}>
-                                {item.quantity} {item.unit}
-                              </span>
-                            )}
-                            {item.category && (
-                              <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded-full bg-[var(--surface-2)] text-[color:var(--text-muted)]">{item.category}</span>
-                            )}
-                          </div>
-                          {item.estimatedPrice && (
-                            <span className="text-sm font-semibold text-amber-400 flex-shrink-0">
-                              {formatCurrency(item.estimatedPrice * (item.quantity || 1))}
-                            </span>
-                          )}
-                        </div>
-                      ))}
-
-                      {/* Add item inline */}
-                      {addingToList === list.id ? (
-                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-                          className="p-3 rounded-xl border border-brand-500/30 bg-brand-500/5 space-y-2"
-                        >
-                          <div className="flex gap-2">
-                            <input autoFocus type="text" value={newItem.name}
-                              onChange={e => setNewItem(n => ({ ...n, name: e.target.value }))}
-                              onKeyDown={e => e.key === 'Enter' && handleAddItem(list.id)}
-                              className="input-field flex-1 py-1.5 text-sm" placeholder="Item name…" />
-                            <input type="number" min="1" value={newItem.quantity}
-                              onChange={e => setNewItem(n => ({ ...n, quantity: e.target.value }))}
-                              className="input-field w-16 py-1.5 text-sm" placeholder="Qty" />
-                            <select value={newItem.unit} onChange={e => setNewItem(n => ({ ...n, unit: e.target.value }))}
-                              className="input-field w-20 py-1.5 text-xs">
-                              {['pcs','kg','g','L','ml','bag','box'].map(u => <option key={u}>{u}</option>)}
-                            </select>
-                          </div>
-                          <div className="flex gap-2">
-                            <input type="number" min="0" step="0.01" value={newItem.estimatedPrice}
-                              onChange={e => setNewItem(n => ({ ...n, estimatedPrice: e.target.value }))}
-                              className="input-field flex-1 py-1.5 text-sm" placeholder="Est. price (₹)" />
-                            <input type="text" value={newItem.category}
-                              onChange={e => setNewItem(n => ({ ...n, category: e.target.value }))}
-                              className="input-field flex-1 py-1.5 text-sm" placeholder="Category (optional)" />
-                          </div>
-                          <div className="flex gap-2">
-                            <button onClick={() => handleAddItem(list.id)} className="btn-primary py-1.5 text-sm flex-1">
-                              Add Item
-                            </button>
-                            <button onClick={() => { setAddingToList(null); setNewItem({ name: '', quantity: '', unit: 'pcs', estimatedPrice: '', category: '' }) }}
-                              className="btn-ghost py-1.5 text-sm">Cancel</button>
-                          </div>
-                        </motion.div>
-                      ) : (
-                        <button
-                          onClick={() => setAddingToList(list.id)}
-                          className="w-full flex items-center gap-2 p-2.5 rounded-xl text-sm border border-dashed hover:bg-white/3 transition-colors"
-                          style={{ borderColor: 'var(--border-color)', color: 'var(--text-muted)' }}
-                        >
-                          <Plus size={14} /> Add item to this list
-                        </button>
-                      )}
-
-                      {/* Footer summary */}
-                      {list.items.length > 0 && (
-                        <div className="pt-2 border-t flex justify-between text-sm" style={{ borderColor: 'var(--border-color)' }}>
-                          <span style={{ color: 'var(--text-muted)' }}>
-                            Picked: {formatCurrency(checkedTotal)}
-                          </span>
-                          <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>
-                            Total: {formatCurrency(total)}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </motion.div>
-          )
-        })
+        <Card><EmptyState icon={<ShoppingCart size={20} />} title="No active lists" body="Create a list and add what the house needs." /></Card>
       )}
 
-      {/* Checkout modal — auto-fills an expense with the grocery list total */}
-      {checkoutList && (
-        <AddExpenseModal
-          onClose={() => setCheckoutList(null)}
-          onSuccess={() => {
-            setCheckoutList(null)
-            api.completeGroceryList(checkoutList.id)
-            setLists(prev => prev.map(l => l.id === checkoutList.id ? { ...l, isCompleted: true } : l))
-            toast.success('Groceries logged as an expense! 🎉')
-          }}
-          prefill={{
-            amount: getListTotal(checkoutList).toFixed(2),
-            description: `Groceries: ${checkoutList.name}`,
-            category: 'GROCERIES',
-          }}
-        />
+      {lists.done.length > 0 && (
+        <div className="mt-6">
+          <button onClick={() => setShowDone(!showDone)} className="flex items-center gap-1 text-sm font-semibold text-ink-2">
+            <ChevronDown size={16} className={cx('transition', showDone && 'rotate-180')} /> Completed lists ({lists.done.length})
+          </button>
+          {showDone && (
+            <Card className="mt-3 divide-y divide-line">
+              {lists.done.map(({ list, items }) => {
+                const expense = data.expenses.find((e) => e.id === list.expense_id)
+                return (
+                  <div key={list.id} className="flex items-center gap-3 px-4 py-3 text-sm">
+                    <Check size={16} className="text-positive" />
+                    <span className="flex-1 font-medium">{list.name} <span className="text-ink-3">· {items.length} items · {formatDate(list.completed_at)}</span></span>
+                    {expense && <span className="font-semibold tabular-nums">{formatMoney(expense.amount, currency)}</span>}
+                  </div>
+                )
+              })}
+            </Card>
+          )}
+        </div>
       )}
+
+      <CheckoutModal list={checkout} onClose={() => setCheckout(null)}
+        estimate={checkout ? sumMoney(data.groceryItems.filter((i) => i.list_id === checkout.id && i.is_checked), (i) => i.estimated_price) : 0} />
     </div>
+  )
+}
+
+function ListCard({ list, items, estimate, checked, currency, createdBy, onCheckout, onDelete }: {
+  list: GroceryList; items: GroceryItem[]; estimate: number; checked: number; currency: string; createdBy: string; onCheckout: () => void; onDelete: () => void
+}) {
+  const { mutate } = useHousehold()
+  const [form, setForm] = useState({ name: '', qty: '1', unit: 'pcs', price: '' })
+
+  async function addItem() {
+    if (!form.name.trim()) return
+    const quantity = Number(form.qty) > 0 ? Number(form.qty) : 1
+    const price = form.price ? parseMoney(form.price) : 0
+    const ok = await mutate((b) => b.insert('groceryItems', { list_id: list.id, name: form.name.trim(), quantity, unit: form.unit || 'pcs', estimated_price: Number.isFinite(price) ? price : 0 }))
+    if (ok) setForm({ name: '', qty: '1', unit: 'pcs', price: '' })
+  }
+
+  return (
+    <Card className="overflow-hidden">
+      <div className="flex items-start justify-between gap-2 px-4 pt-4">
+        <div className="min-w-0">
+          <h2 className="truncate font-semibold text-ink">{list.name}</h2>
+          <p className="text-[12.5px] text-ink-3">by {createdBy} · {checked}/{items.length} in cart · est. {formatMoney(estimate, currency)}</p>
+        </div>
+        <div className="flex shrink-0 gap-1">
+          <Button size="sm" variant="secondary" disabled={!checked} onClick={onCheckout}>Done shopping</Button>
+          <IconButton label="Delete list" onClick={onDelete}><Trash2 size={16} /></IconButton>
+        </div>
+      </div>
+      <Progress className="mx-4 mt-3 w-auto" value={items.length ? (checked / items.length) * 100 : 0} tone="positive" />
+      <ul className="mt-2 divide-y divide-line">
+        {items.map((i) => (
+          <li key={i.id} className="group flex items-center gap-3 px-4 py-2">
+            <button aria-label={i.is_checked ? `Uncheck ${i.name}` : `Check ${i.name}`} onClick={() => mutate((b) => b.update('groceryItems', i.id, { is_checked: !i.is_checked }))}
+              className={cx('flex h-5 w-5 shrink-0 items-center justify-center rounded-[6px] border-2 transition', i.is_checked ? 'border-positive bg-positive text-white' : 'border-line-strong')}>
+              {i.is_checked && <Check size={13} strokeWidth={3} />}
+            </button>
+            <span className={cx('flex-1 text-sm', i.is_checked && 'text-ink-3 line-through')}>{i.name} <span className="text-ink-3">· {i.quantity} {i.unit}</span></span>
+            {i.category && <Badge className="hidden sm:inline-flex">{i.category}</Badge>}
+            {i.estimated_price > 0 && <span className="text-[13px] tabular-nums text-ink-2">{formatMoney(i.estimated_price, currency)}</span>}
+            <IconButton label={`Remove ${i.name}`} className="h-7 w-7 opacity-60 hover:opacity-100" onClick={() => mutate((b) => b.remove('groceryItems', i.id))}><Trash2 size={14} /></IconButton>
+          </li>
+        ))}
+      </ul>
+      <form onSubmit={(e) => { e.preventDefault(); addItem() }} className="flex flex-wrap gap-2 border-t border-line bg-surface-2 p-3">
+        <input className="field h-9 min-w-[120px] flex-1" placeholder="Add item" maxLength={80} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+        <input className="field h-9 w-16" inputMode="decimal" aria-label="Quantity" value={form.qty} onChange={(e) => setForm({ ...form, qty: e.target.value })} />
+        <input className="field h-9 w-16" aria-label="Unit" value={form.unit} onChange={(e) => setForm({ ...form, unit: e.target.value })} />
+        <input className="field h-9 w-24" inputMode="decimal" placeholder="₹ est." aria-label="Estimated price" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} />
+        <Button size="sm" type="submit" disabled={!form.name.trim()}>Add</Button>
+      </form>
+    </Card>
+  )
+}
+
+function CheckoutModal({ list, estimate, onClose }: { list: GroceryList | null; estimate: number; onClose: () => void }) {
+  const { userId, currency, mutate } = useHousehold()
+  const [amount, setAmount] = useState('')
+  const [error, setError] = useState<string | null>(null)
+  const [key, setKey] = useState<string | null>(null)
+  if ((list?.id ?? null) !== key) { setKey(list?.id ?? null); setAmount(estimate ? String(estimate) : ''); setError(null) }
+
+  async function finish() {
+    if (!list) return
+    const value = parseMoney(amount)
+    if (!Number.isFinite(value) || value <= 0) return setError('Enter what you actually paid.')
+    const ok = await mutate(async (b) => {
+      const expense = await b.insert('expenses', { amount: value, description: list.name, category: 'GROCERIES', expense_date: today(), paid_by: userId, visibility: 'HOUSEHOLD', payment_method: 'UPI' })
+      await b.update('groceryLists', list.id, { completed_at: new Date().toISOString(), expense_id: expense.id })
+      return true
+    }, 'Shopping recorded as an expense')
+    if (ok) onClose()
+  }
+
+  return (
+    <Modal open={!!list} onClose={onClose} title="Done shopping" description="We’ll record what you paid as a grocery expense."
+      footer={<><Button variant="secondary" onClick={onClose}>Cancel</Button><Button onClick={finish}>Record expense</Button></>}>
+      <Field label={`Amount paid (${currency})`} hint={estimate ? `Estimated from ticked items: ${formatMoney(estimate, currency)}` : undefined}>
+        <input className="field" inputMode="decimal" autoFocus value={amount} onChange={(e) => setAmount(e.target.value)} />
+      </Field>
+      {error && <p className="mt-3 rounded-[10px] bg-negative-soft px-3 py-2 text-sm text-negative">{error}</p>}
+    </Modal>
   )
 }

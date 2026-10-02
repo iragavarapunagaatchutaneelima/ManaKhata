@@ -1,21 +1,16 @@
-// Builds the static web bundle for the Android app and syncs it into android/.
+// Builds the static web bundle for the Kinfold Android app and syncs it into android/.
 //
-//   npm run build:android                                   -> offline demo app (no server needed)
-//   NEXT_PUBLIC_API_URL=https://api.example.com npm run build:android  -> app talks to your API
+//   npm run build:android
 //
-// Works the same on Windows, macOS and Linux (no cross-env needed).
+// The app talks to the same Supabase project as the website (see src/lib/config.ts;
+// override with NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY).
+// Works the same on Windows, macOS and Linux.
 import { execSync } from 'node:child_process'
 import { cpSync, readdirSync, rmSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 
-const apiUrl = process.env.NEXT_PUBLIC_API_URL
-const env = {
-  ...process.env,
-  BUILD_TARGET: 'android',
-  NEXT_PUBLIC_DEMO_MODE: process.env.NEXT_PUBLIC_DEMO_MODE ?? (apiUrl ? 'false' : 'true'),
-}
+const env = { ...process.env, BUILD_TARGET: 'android' }
 
-console.log(`[android] demo mode: ${env.NEXT_PUBLIC_DEMO_MODE}, API: ${apiUrl || '(none)'}`)
 rmSync('out', { recursive: true, force: true })
 execSync('npx next build', { stdio: 'inherit', env })
 flattenRscPayloads('out')

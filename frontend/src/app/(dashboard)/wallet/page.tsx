@@ -1,364 +1,143 @@
 'use client'
- 
-import { useEffect, useState } from 'react'
-import { motion } from 'framer-motion'
-import { Wallet, ArrowUpRight, ArrowDownLeft, Share2, Sparkles } from 'lucide-react'
-import api from '@/lib/api'
-import { useAuthStore } from '@/store/authStore'
-import { formatCurrency, getRoleBadge } from '@/hooks/useUtils'
-import type { HouseholdMember } from '@/types'
-import toast from 'react-hot-toast'
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts'
-import { CHART_PALETTE } from '@/constants/theme'
- 
-interface WalletActivity {
-  id: string
-  type: 'ALLOCATE' | 'RECEIVE' | 'TRANSFER'
-  amount: number
-  targetMember: string
-  date: string
-  status: 'SUCCESS' | 'PENDING'
-}
- 
+
+import { useMemo, useState } from 'react'
+import { ArrowDownLeft, ArrowUpRight, Gift, Minus, Plus, Send, Wallet } from 'lucide-react'
+import { Avatar, Badge, Button, Card, CardHeader, EmptyState, Field, Modal, PageHeader } from '@/components/ui'
+import { useHousehold } from '@/store/ledger'
+import { formatDate, formatMoney, parseMoney } from '@/lib/money'
+import { walletBalance, walletBalances } from '@/lib/finance'
+import { ROLE_LABELS } from '@/lib/categories'
+import type { WalletKind } from '@/lib/model'
+
+const KIND_LABEL: Record<WalletKind, string> = { TOP_UP: 'Added money', ALLOCATION: 'Pocket money', TRANSFER: 'Transfer', CHORE_REWARD: 'Chore reward', WITHDRAWAL: 'Spent' }
+
+type Action = 'topup' | 'give' | 'spend' | null
+
 export default function WalletPage() {
-  const { user } = useAuthStore()
-  const [members, setMembers] = useState<HouseholdMember[]>([])
-  const [personalBalance, setPersonalBalance] = useState<number>(0)
-  const [loading, setLoading] = useState(true)
-  const [allocForm, setAllocForm] = useState({ memberId: '', amount: '' })
-  const [activities, setActivities] = useState<WalletActivity[]>([
-    { id: '1', type: 'ALLOCATE', amount: 5000, targetMember: 'Demo User 2', date: '2026-05-22', status: 'SUCCESS' },
-    { id: '2', type: 'ALLOCATE', amount: 3000, targetMember: 'Demo User 3', date: '2026-05-20', status: 'SUCCESS' },
-    { id: '3', type: 'ALLOCATE', amount: 2000, targetMember: 'Demo User 4', date: '2026-05-15', status: 'SUCCESS' },
-  ])
- 
-  useEffect(() => {
-    fetchData()
-  }, [])
- 
-  async function fetchData() {
-    try {
-      const res = await api.getHousehold()
-      if (res.success) {
-        setMembers(res.data.members || [])
-        // Find current user's balance
-        const currentUserMember = res.data.members?.find((m: any) => m.email?.toLowerCase() === user?.email?.toLowerCase())
-        if (currentUserMember) {
-          setPersonalBalance(currentUserMember.walletBalance)
-        } else {
-          setPersonalBalance(user?.walletBalance ?? 0)
-        }
-      }
-    } catch {
-      toast.error('Failed to load wallet data')
-    } finally {
-      setLoading(false)
+  const { data, userId, members, currency, isManager, memberName, firstName } = useHousehold()
+  const [action, setAction] = useState<Action>(null)
+
+  const view = useMemo(() => {
+    if (!data) return null
+    return {
+      mine: walletBalance(data.wallet, userId),
+      balances: walletBalances(data.wallet, members),
+      history: data.wallet.filter((t) => isManager || t.from_user === userId || t.to_user === userId).slice(0, 40),
     }
-  }
- 
-  const handleAllocate = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!allocForm.memberId || !allocForm.amount) return
- 
-    const memberId = parseInt(allocForm.memberId)
-    const amount = parseFloat(allocForm.amount)
- 
-    if (personalBalance < amount) {
-      toast.error('Insufficient wallet balance to allocate!')
-      return
-    }
- 
-    try {
-      const res = await api.allocateWallet(memberId, amount)
-      if (res.success) {
-        toast.success(`₹${amount} allocated successfully!`)
-        // Update local list
-        setMembers(prev => prev.map(m => {
-          if (m.id === memberId) {
-            return { ...m, walletBalance: m.walletBalance + amount }
-          }
-          return m
-        }))
-        setPersonalBalance(prev => prev - amount)
- 
-        // Log transaction
-        const targetMemberObj = members.find(m => m.id === memberId)
-        const targetName = targetMemberObj ? targetMemberObj.fullName : 'Family Member'
-        
-        setActivities(prev => [
-          {
-            id: Date.now().toString(),
-            type: 'ALLOCATE',
-            amount,
-            targetMember: targetName,
-            date: new Date().toISOString().split('T')[0],
-            status: 'SUCCESS'
-          },
-          ...prev
-        ])
-        
-        setAllocForm({ memberId: '', amount: '' })
-      }
-    } catch {
-      toast.error('Failed to allocate wallet funds')
-    }
-  }
- 
-  if (loading) {
-    return (
-      <div className="max-w-6xl mx-auto space-y-6">
-        <div className="skeleton h-48 rounded-2xl" />
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="skeleton h-80 rounded-2xl" />
-          <div className="skeleton h-80 rounded-2xl" />
-        </div>
-      </div>
-    )
-  }
- 
-  // Recharts Chart Data
-  const chartData = members.map(m => ({
-    name: m.fullName.split(' ')[0],
-    value: m.walletBalance
-  })).filter(item => item.value > 0)
- 
-  const CHART_COLORS = CHART_PALETTE
- 
+  }, [data, userId, members, isManager])
+
+  if (!view) return null
+
   return (
-    <div className="max-w-6xl mx-auto space-y-6">
-      {/* Overview Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Personal Balance Card */}
-        <motion.div 
-          className="relative overflow-hidden rounded-2xl p-6 gradient-brand flex flex-col justify-between h-48"
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
-          <div className="relative z-10 flex justify-between items-start">
-            <div>
-              <span className="text-white/75 text-xs font-semibold uppercase tracking-wider">Your Balance</span>
-              <h2 className="font-display font-bold text-3xl mt-1">{formatCurrency(personalBalance)}</h2>
-            </div>
-            <div className="p-3 rounded-xl bg-white/15">
-              <Wallet size={24} />
-            </div>
+    <div>
+      <PageHeader title="Pocket money" subtitle="A family wallet for allowances, chore rewards and small transfers. It tracks cash you hand over — no bank link." />
+
+      <div className="grid gap-5 lg:grid-cols-3">
+        <Card fold className="p-6 lg:col-span-1">
+          <div className="flex items-center gap-2 text-sm font-semibold text-ink-3"><Wallet size={16} /> Your wallet</div>
+          <div className="mt-2 font-display text-4xl font-bold text-ink">{formatMoney(view.mine, currency, { decimals: true })}</div>
+          <div className="mt-5 grid grid-cols-3 gap-2">
+            <Button variant="secondary" size="sm" icon={<Plus size={15} />} onClick={() => setAction('topup')}>Add</Button>
+            <Button size="sm" icon={<Send size={15} />} onClick={() => setAction('give')}>{isManager ? 'Give' : 'Send'}</Button>
+            <Button variant="secondary" size="sm" icon={<Minus size={15} />} onClick={() => setAction('spend')}>Spent</Button>
           </div>
-          <div className="relative z-10 flex items-center gap-2 text-xs text-white/80">
-            <span className="flex items-center gap-0.5 text-white font-semibold">
-              <ArrowUpRight size={14} /> Stable
-            </span>
-            <span>Allocated from Demo Household Treasury</span>
-          </div>
-        </motion.div>
- 
-        {/* Total Household Treasury Card */}
-        <motion.div 
-          className="glass-card p-6 flex flex-col justify-between h-48"
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.05 }}
-        >
-          <div>
-            <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Household Distribution</span>
-            <h2 className="font-display font-bold text-3xl mt-1" style={{ color: 'var(--text-primary)' }}>
-              {formatCurrency(members.reduce((acc, m) => acc + m.walletBalance, 0))}
-            </h2>
-          </div>
-          <div className="flex items-center gap-4 text-xs">
-            <div>
-              <div className="font-semibold" style={{ color: 'var(--text-primary)' }}>{members.length} Members</div>
-              <div style={{ color: 'var(--text-muted)' }}>Wallet Holders</div>
-            </div>
-            <div className="w-px h-8" style={{ background: 'var(--border-color)' }} />
-            <div>
-              <div className="font-semibold text-emerald-400">
-                {formatCurrency(members.reduce((acc, m) => acc + m.walletBalance, 0) / (members.length || 1))}
-              </div>
-              <div style={{ color: 'var(--text-muted)' }}>Average Balance</div>
-            </div>
-          </div>
-        </motion.div>
- 
-        {/* Quick Transfer Mock Actions */}
-        <motion.div 
-          className="glass-card p-6 flex flex-col justify-between h-48"
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-        >
-          <h3 className="text-sm font-semibold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Quick Actions</h3>
-          <div className="grid grid-cols-2 gap-2 mt-2">
-            <button 
-              onClick={() => toast.success('Transfer request submitted to Househead (Mocked)')}
-              className="flex items-center justify-center gap-1.5 p-3 rounded-xl border border-[color:var(--border-color)] bg-[var(--surface-2)] text-xs font-semibold hover:bg-[var(--sidebar-hover)] transition-all"
-              style={{ color: 'var(--text-secondary)' }}
-            >
-              <ArrowDownLeft size={14} className="text-brand-400" /> Request Funds
-            </button>
-            <button 
-              onClick={() => toast.success('P2P transfer request initiated (Mocked)')}
-              className="flex items-center justify-center gap-1.5 p-3 rounded-xl border border-[color:var(--border-color)] bg-[var(--surface-2)] text-xs font-semibold hover:bg-[var(--sidebar-hover)] transition-all"
-              style={{ color: 'var(--text-secondary)' }}
-            >
-              <Share2 size={14} className="text-emerald-400" /> Send to Member
-            </button>
-          </div>
-          <p className="text-[10px] text-center" style={{ color: 'var(--text-muted)' }}>P2P features simulate household settlement</p>
-        </motion.div>
-      </div>
- 
-      {/* Allocations & Chart */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Fund Allocation & Member Balances */}
-        <div className="space-y-6">
-          {/* Member Wallet Balances */}
-          <div className="glass-card p-6">
-            <h3 className="font-display font-semibold text-lg mb-4" style={{ color: 'var(--text-primary)' }}>
-              👥 Family Members&apos; Wallet Balances
-            </h3>
-            <div className="space-y-3">
-              {members.map(member => {
-                const badge = getRoleBadge(member.role)
-                return (
-                  <div key={member.id} className="flex items-center justify-between p-3 rounded-xl" style={{ background: 'var(--bg-primary)' }}>
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-xl gradient-brand flex items-center justify-center text-white font-bold text-sm">
-                        {member.fullName.charAt(0)}
-                      </div>
-                      <div>
-                        <div className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
-                          {member.fullName}
-                          {member.isHousehead && <span className="ml-1 text-gold-500 text-xs">👑</span>}
-                        </div>
-                        <span className={`badge ${badge.className} text-[9px] px-1.5 py-0.5`}>{badge.label}</span>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-base font-bold text-emerald-400">{formatCurrency(member.walletBalance)}</div>
-                      <div className="text-[10px]" style={{ color: 'var(--text-muted)' }}>Balance</div>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
- 
-          {/* Househead Allocation Tool */}
-          {user?.isHousehead && (
-            <div className="glass-card p-6 border border-brand-500/20 relative overflow-hidden">
-              <div className="absolute inset-0 gradient-brand opacity-[0.03]" />
-              <div className="relative z-10">
-                <div className="flex items-center gap-1.5 mb-2">
-                  <Sparkles size={16} className="text-brand-400 animate-pulse" />
-                  <h3 className="font-display font-semibold text-base" style={{ color: 'var(--text-primary)' }}>
-                    Allocate Wallet Funds
-                  </h3>
+          <p className="mt-4 text-[12.5px] text-ink-3">
+            {isManager ? 'Add money to your wallet, then give pocket money or pay chore rewards from it.' : 'Your pocket money and chore rewards land here. Record what you spend to keep it accurate.'}
+          </p>
+        </Card>
+
+        <Card className="lg:col-span-2">
+          <CardHeader title="Family balances" />
+          <ul className="divide-y divide-line">
+            {members.map((m) => (
+              <li key={m.user_id} className="flex items-center gap-3 px-5 py-3">
+                <Avatar name={m.full_name} size={34} />
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-sm font-semibold">{m.full_name}{m.user_id === userId && <span className="text-ink-3"> (you)</span>}</div>
+                  <div className="text-[12px] text-ink-3">{ROLE_LABELS[m.role]}</div>
                 </div>
-                <p className="text-xs mb-4" style={{ color: 'var(--text-muted)' }}>
-                  As the Househead, you can distribute treasury funds directly to other members&apos; wallets.
-                </p>
-                <form onSubmit={handleAllocate} className="flex flex-col sm:flex-row gap-3">
-                  <select 
-                    id="alloc-wallet-member" 
-                    value={allocForm.memberId} 
-                    onChange={e => setAllocForm(f => ({ ...f, memberId: e.target.value }))}
-                    className="input-field flex-1" 
-                    required
-                  >
-                    <option value="">Select family member...</option>
-                    {members.filter(m => !m.isHousehead).map(m => (
-                      <option key={m.id} value={m.id}>{m.fullName}</option>
-                    ))}
-                  </select>
-                  <input 
-                    id="alloc-wallet-amount" 
-                    type="number" 
-                    min="1" 
-                    value={allocForm.amount}
-                    onChange={e => setAllocForm(f => ({ ...f, amount: e.target.value }))}
-                    className="input-field flex-1" 
-                    placeholder="Amount (₹)" 
-                    required 
-                  />
-                  <button type="submit" className="btn-primary px-6 whitespace-nowrap">
-                    Distribute 💸
-                  </button>
-                </form>
-              </div>
-            </div>
-          )}
-        </div>
- 
-        {/* Wallet Charts & Activity Logs */}
-        <div className="space-y-6">
-          {/* Treasury Chart */}
-          <div className="glass-card p-6">
-            <h3 className="font-display font-semibold text-lg mb-4" style={{ color: 'var(--text-primary)' }}>
-              📊 Fund Distribution Chart
-            </h3>
-            {chartData.length > 0 ? (
-              <div className="h-44 w-full flex items-center justify-center">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={chartData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={45}
-                      outerRadius={65}
-                      paddingAngle={4}
-                      dataKey="value"
-                    >
-                      {chartData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip 
-                      contentStyle={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '10px', color: 'var(--text-primary)' }}
-                      formatter={(val: any) => [`₹${val}`, 'Wallet Balance']}
-                    />
-                    <Legend verticalAlign="bottom" height={36} iconType="circle" />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-            ) : (
-              <div className="h-44 flex items-center justify-center text-xs" style={{ color: 'var(--text-muted)' }}>
-                No wallet funds allocated yet.
-              </div>
-            )}
-          </div>
- 
-          {/* Recent Wallet Activities */}
-          <div className="glass-card p-6">
-            <h3 className="font-display font-semibold text-lg mb-4" style={{ color: 'var(--text-primary)' }}>
-              📜 Recent Wallet Activity
-            </h3>
-            <div className="space-y-3 max-h-52 overflow-y-auto pr-1">
-              {activities.map(act => (
-                <div key={act.id} className="flex items-center justify-between p-3 rounded-xl border border-[color:var(--border-color)] bg-[var(--surface-2)]">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg flex items-center justify-center text-brand-400 bg-brand-500/10">
-                      <ArrowUpRight size={16} />
-                    </div>
-                    <div>
-                      <div className="text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>
-                        Allocated to {act.targetMember}
-                      </div>
-                      <div className="text-[10px]" style={{ color: 'var(--text-muted)' }}>{act.date}</div>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-sm font-bold text-brand-400">-₹{act.amount}</div>
-                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 font-semibold uppercase tracking-wider">
-                      {act.status}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
+                <span className="font-semibold tabular-nums">{formatMoney(view.balances.get(m.user_id) ?? 0, currency, { decimals: true })}</span>
+              </li>
+            ))}
+          </ul>
+        </Card>
       </div>
+
+      <Card className="mt-5">
+        <CardHeader title="History" subtitle={isManager ? 'All wallet activity in the household' : 'Your wallet activity'} />
+        {view.history.length ? (
+          <ul className="divide-y divide-line">
+            {view.history.map((t) => {
+              const incoming = t.to_user === userId
+              const outgoing = t.from_user === userId
+              const sign = incoming && !outgoing ? 1 : outgoing && !incoming ? -1 : 0
+              return (
+                <li key={t.id} className="flex items-center gap-3 px-5 py-3 text-sm">
+                  <span className={`inline-flex h-9 w-9 items-center justify-center rounded-[10px] ${t.kind === 'CHORE_REWARD' ? 'bg-saffron-soft text-saffron-ink' : sign >= 0 ? 'bg-positive-soft text-positive' : 'bg-surface-3 text-ink-2'}`}>
+                    {t.kind === 'CHORE_REWARD' ? <Gift size={16} /> : sign >= 0 ? <ArrowDownLeft size={16} /> : <ArrowUpRight size={16} />}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 font-medium"><span className="truncate">{t.note || KIND_LABEL[t.kind]}</span><Badge>{KIND_LABEL[t.kind]}</Badge></div>
+                    <div className="text-[12px] text-ink-3">
+                      {t.from_user ? firstName(t.from_user) : 'Cash in'} → {t.to_user ? firstName(t.to_user) : 'Spent'} · {formatDate(t.created_at)}
+                    </div>
+                  </div>
+                  <span className={`font-semibold tabular-nums ${sign > 0 ? 'text-positive' : ''}`}>
+                    {sign > 0 ? '+' : sign < 0 ? '−' : ''}{formatMoney(t.amount, currency, { decimals: true })}
+                  </span>
+                </li>
+              )
+            })}
+          </ul>
+        ) : <EmptyState icon={<Wallet size={20} />} title="No wallet activity yet" body="Add money to start giving pocket money and chore rewards." />}
+      </Card>
+
+      <WalletAction action={action} onClose={() => setAction(null)} balance={view.mine} memberName={memberName} />
     </div>
+  )
+}
+
+function WalletAction({ action, onClose, balance, memberName }: { action: Action; onClose: () => void; balance: number; memberName: (id: string) => string }) {
+  const { members, userId, currency, isManager, mutate } = useHousehold()
+  const [amount, setAmount] = useState('')
+  const [note, setNote] = useState('')
+  const [to, setTo] = useState('')
+  const [error, setError] = useState<string | null>(null)
+  const others = members.filter((m) => m.user_id !== userId)
+
+  const titles = { topup: 'Add money to your wallet', give: isManager ? 'Give pocket money' : 'Send to family', spend: 'Record spending' }
+
+  async function submit() {
+    const value = parseMoney(amount)
+    if (!Number.isFinite(value) || value <= 0) return setError('Enter an amount above zero.')
+    if (action !== 'topup' && value > balance) return setError(`You only have ${formatMoney(balance, currency, { decimals: true })} in your wallet.`)
+    const target = to || others[0]?.user_id
+    if (action === 'give' && !target) return setError('Pick who to send money to.')
+    const ok = await mutate(async (b) => {
+      if (action === 'topup') await b.walletTopUp(value, note || undefined)
+      if (action === 'spend') await b.walletWithdraw(value, note || undefined)
+      if (action === 'give') await b.walletTransfer(target!, value, note || undefined)
+      return true
+    }, action === 'give' ? `Sent to ${memberName(target!)}` : 'Wallet updated')
+    if (ok) { setAmount(''); setNote(''); setError(null); onClose() }
+  }
+
+  return (
+    <Modal open={action !== null} onClose={onClose} title={action ? titles[action] : ''}
+      description={action === 'topup' ? 'Record cash you are putting into the family wallet.' : `Available: ${formatMoney(balance, currency, { decimals: true })}`}
+      footer={<><Button variant="secondary" onClick={onClose}>Cancel</Button><Button onClick={submit}>Confirm</Button></>}>
+      <div className="space-y-4">
+        {action === 'give' && (
+          <Field label="To">
+            <select className="field" value={to || others[0]?.user_id || ''} onChange={(e) => setTo(e.target.value)}>
+              {others.map((m) => <option key={m.user_id} value={m.user_id}>{m.full_name}</option>)}
+            </select>
+          </Field>
+        )}
+        <Field label={`Amount (${currency})`}><input className="field" inputMode="decimal" autoFocus value={amount} onChange={(e) => setAmount(e.target.value)} /></Field>
+        <Field label="Note (optional)"><input className="field" maxLength={200} placeholder={action === 'give' ? 'e.g. October pocket money' : ''} value={note} onChange={(e) => setNote(e.target.value)} /></Field>
+        {error && <p className="rounded-[10px] bg-negative-soft px-3 py-2 text-sm text-negative">{error}</p>}
+      </div>
+    </Modal>
   )
 }

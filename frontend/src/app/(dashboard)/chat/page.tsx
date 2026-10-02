@@ -1,457 +1,108 @@
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { Send, Hash, Users, Sparkles, Smile, Image, Paperclip, MoreVertical, ShieldAlert } from 'lucide-react'
-import { useAuthStore } from '@/store/authStore'
-import { DEMO_USERS } from '@/constants/demo'
-import toast from 'react-hot-toast'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { Hash, Send, Trash2 } from 'lucide-react'
+import { Avatar, Badge, Card, IconButton, cx } from '@/components/ui'
+import { useHousehold } from '@/store/ledger'
+import { relativeDay } from '@/lib/money'
+import { ROLE_LABELS } from '@/lib/categories'
+import type { ChatChannel } from '@/lib/model'
 
-interface ChatMessage {
-  id: string
-  channel: string
-  senderName: string
-  senderEmail: string
-  senderRole: string
-  content: string
-  timestamp: string
-}
-
-interface Channel {
-  id: string
-  name: string
-  description: string
-  icon: string
-}
-
-const channels: Channel[] = [
-  { id: 'general', name: 'general', description: 'General household announcements and banter', icon: '📢' },
-  { id: 'expenses-discussions', name: 'expenses-discussions', description: 'Discussing budgets, savings, and ledger entries', icon: '💰' },
-  { id: 'trip-planning', name: 'trip-planning', description: 'Coordinating itineraries and travel expenses', icon: '✈️' }
+const CHANNELS: { id: ChatChannel; label: string; hint: string }[] = [
+  { id: 'general', label: 'general', hint: 'Everyday family chat' },
+  { id: 'expenses', label: 'expenses', hint: 'Money questions and receipts' },
+  { id: 'plans', label: 'plans', hint: 'Trips, goals and big purchases' },
 ]
-
-const initialMessages: ChatMessage[] = [
-  // General Channel Messages
-  {
-    id: 'g1',
-    channel: 'general',
-    senderName: 'Demo User 1',
-    senderEmail: 'DEMO_USERS[0].email',
-    senderRole: 'HOUSEHEAD',
-    content: 'Welcome everyone to our new ManaKhata space! Let\'s keep this board active to manage our daily logs.',
-    timestamp: '10:15 AM'
-  },
-  {
-    id: 'g2',
-    channel: 'general',
-    senderName: 'Demo User 2',
-    senderEmail: 'DEMO_USERS[1].email',
-    senderRole: 'PARENT',
-    content: 'Perfect! I just logged the milk and vegetable groceries for today. Super easy to use.',
-    timestamp: '10:20 AM'
-  },
-  {
-    id: 'g3',
-    channel: 'general',
-    senderName: 'Demo User 4',
-    senderEmail: 'DEMO_USERS[3].email',
-    senderRole: 'GRANDPARENT',
-    content: 'I also noticed the medicine logs are much clearer now. Good job setting this up.',
-    timestamp: '11:05 AM'
-  },
-  {
-    id: 'g4',
-    channel: 'general',
-    senderName: 'Demo User 3',
-    senderEmail: 'DEMO_USERS[2].email',
-    senderRole: 'ADULT_CHILD',
-    content: 'Awesome. By the way, I might need a pocket money wallet reload soon for college text books.',
-    timestamp: '11:15 AM'
-  },
-
-  // Expenses Channel Messages
-  {
-    id: 'e1',
-    channel: 'expenses-discussions',
-    senderName: 'Demo User 2',
-    senderEmail: 'DEMO_USERS[1].email',
-    senderRole: 'PARENT',
-    content: 'Hey, I see we spent ₹2,450 on monthly groceries. Is that including the weekend store run?',
-    timestamp: 'Yesterday, 4:10 PM'
-  },
-  {
-    id: 'e2',
-    channel: 'expenses-discussions',
-    senderName: 'Demo User 1',
-    senderEmail: 'DEMO_USERS[0].email',
-    senderRole: 'HOUSEHEAD',
-    content: 'Yes, that covers all the groceries. Our grocery budget is currently at 68% utilization. We are safe!',
-    timestamp: 'Yesterday, 4:15 PM'
-  },
-  {
-    id: 'e3',
-    channel: 'expenses-discussions',
-    senderName: 'Demo User 3',
-    senderEmail: 'DEMO_USERS[2].email',
-    senderRole: 'ADULT_CHILD',
-    content: 'I will log my fuel refills under petrol. Can we review the vehicle maintenance budget next weekend?',
-    timestamp: 'Yesterday, 5:30 PM'
-  },
-
-  // Trip Channel Messages
-  {
-    id: 't1',
-    channel: 'trip-planning',
-    senderName: 'Demo User 3',
-    senderEmail: 'DEMO_USERS[2].email',
-    senderRole: 'ADULT_CHILD',
-    content: 'So excited for the Goa trip! I draft-planned the beach itinerary. Day 1: Baga, Day 2: Palolem.',
-    timestamp: '2 Days Ago'
-  },
-  {
-    id: 't2',
-    channel: 'trip-planning',
-    senderName: 'Demo User 2',
-    senderEmail: 'DEMO_USERS[1].email',
-    senderRole: 'PARENT',
-    content: 'Looks good, but let\'s keep the budget under ₹45,000. Flight bookings are priority.',
-    timestamp: '2 Days Ago'
-  },
-  {
-    id: 't3',
-    channel: 'trip-planning',
-    senderName: 'Demo User 4',
-    senderEmail: 'DEMO_USERS[3].email',
-    senderRole: 'GRANDPARENT',
-    content: 'I will handle the medical travel kit and basic packing checklist. Let me know if we need travel insurance.',
-    timestamp: '1 Day Ago'
-  }
-]
-
-// Automated script responses based on channel and user message
-const mockMemberReplies: Record<string, { sender: string, email: string, role: string, content: string }[]> = {
-  general: [
-    { sender: 'Demo User 2', email: 'DEMO_USERS[1].email', role: 'PARENT', content: 'Great point. Let\'s discuss this at dinner tonight.' },
-    { sender: 'Demo User 1', email: 'DEMO_USERS[0].email', role: 'HOUSEHEAD', content: 'Understood. I will check the ledger update in a bit.' },
-    { sender: 'Demo User 3', email: 'DEMO_USERS[2].email', role: 'ADULT_CHILD', content: 'Got it! I\'m free after my classes today if anyone needs help.' },
-    { sender: 'Demo User 4', email: 'DEMO_USERS[3].email', role: 'GRANDPARENT', content: 'I agree. Let\'s maintain this track list.' }
-  ],
-  'expenses-discussions': [
-    { sender: 'Demo User 1', email: 'DEMO_USERS[0].email', role: 'HOUSEHEAD', content: 'I just reviewed the budget logs. Everything looks clean and aligned.' },
-    { sender: 'Demo User 2', email: 'DEMO_USERS[1].email', role: 'PARENT', content: 'Let\'s try to keep the variable expenses lower this week to maximize savings.' },
-    { sender: 'Demo User 3', email: 'DEMO_USERS[2].email', role: 'ADULT_CHILD', content: 'I\'ll write down the notes for any emergency cash draws.' }
-  ],
-  'trip-planning': [
-    { sender: 'Demo User 3', email: 'DEMO_USERS[2].email', role: 'ADULT_CHILD', content: 'Should we add water sports to the Goa activity budget? I heard Palolem has great kayaking!' },
-    { sender: 'Demo User 2', email: 'DEMO_USERS[1].email', role: 'PARENT', content: 'I\'ll verify the budget allocation before we book any extra guided tours.' },
-    { sender: 'Demo User 1', email: 'DEMO_USERS[0].email', role: 'HOUSEHEAD', content: 'Trip budget of ₹45k is configured. Let\'s log all hotel bills to it.' }
-  ]
-}
 
 export default function ChatPage() {
-  const { user } = useAuthStore()
-  const [activeChannel, setActiveChannel] = useState<string>('general')
-  const [messages, setMessages] = useState<ChatMessage[]>([])
-  const [inputText, setInputText] = useState('')
-  const [typingUser, setTypingUser] = useState<string | null>(null)
-  const messagesEndRef = useRef<HTMLDivElement>(null)
+  const { data, userId, member, mode, mutate } = useHousehold()
+  const [channel, setChannel] = useState<ChatChannel>('general')
+  const [text, setText] = useState('')
+  const [sending, setSending] = useState(false)
+  const bottom = useRef<HTMLDivElement>(null)
 
-  useEffect(() => {
-    // Load chat messages from LocalStorage or seed default
-    const savedMessages = localStorage.getItem('mk_chat_messages')
-    if (savedMessages) {
-      setMessages(JSON.parse(savedMessages))
-    } else {
-      setMessages(initialMessages)
-      localStorage.setItem('mk_chat_messages', JSON.stringify(initialMessages))
-    }
-  }, [])
+  const messages = useMemo(() => {
+    const list = (data?.chat ?? []).filter((m) => m.channel === channel).sort((a, b) => a.created_at.localeCompare(b.created_at))
+    return list.map((m, i) => ({ m, showDay: i === 0 || list[i - 1].created_at.slice(0, 10) !== m.created_at.slice(0, 10) }))
+  }, [data, channel])
+  useEffect(() => { bottom.current?.scrollIntoView({ block: 'end' }) }, [messages.length, channel])
 
-  useEffect(() => {
-    scrollToBottom()
-  }, [messages, typingUser])
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  async function send() {
+    const content = text.trim()
+    if (!content || sending) return
+    setSending(true)
+    const ok = await mutate((b) => b.insert('chat', { channel, content }))
+    setSending(false)
+    if (ok) setText('')
   }
-
-  const handleSend = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!inputText.trim()) return
-
-    const userMessage: ChatMessage = {
-      id: Date.now().toString(),
-      channel: activeChannel,
-      senderName: user?.fullName || 'Demo User',
-      senderEmail: user?.email || 'DEMO_USERS[0].email',
-      senderRole: user?.role || 'HOUSEHEAD',
-      content: inputText,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    }
-
-    const updated = [...messages, userMessage]
-    setMessages(updated)
-    localStorage.setItem('mk_chat_messages', JSON.stringify(updated))
-    setInputText('')
-
-    // Trigger simulated response from another family member
-    triggerSimulatedReply(activeChannel)
-  }
-
-  const triggerSimulatedReply = (channel: string) => {
-    // Select a random reply from pool
-    const pool = mockMemberReplies[channel] || mockMemberReplies.general
-    // Filter out replies from the user themselves
-    const availableReplies = pool.filter(r => r.email.toLowerCase() !== user?.email?.toLowerCase())
-    if (availableReplies.length === 0) return
-
-    const randomReply = availableReplies[Math.floor(Math.random() * availableReplies.length)]
-
-    // Start typing status
-    setTimeout(() => {
-      setTypingUser(randomReply.sender)
-    }, 1000)
-
-    // Append reply
-    setTimeout(() => {
-      const replyMessage: ChatMessage = {
-        id: (Date.now() + 1).toString(),
-        channel,
-        senderName: randomReply.sender,
-        senderEmail: randomReply.email,
-        senderRole: randomReply.role,
-        content: randomReply.content,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-      }
-
-      setMessages(prev => {
-        const next = [...prev, replyMessage]
-        localStorage.setItem('mk_chat_messages', JSON.stringify(next))
-        return next
-      })
-      setTypingUser(null)
-    }, 3200)
-  }
-
-  const currentChannel = channels.find(c => c.id === activeChannel) || channels[0]
-  const channelMessages = messages.filter(m => m.channel === activeChannel)
 
   return (
-    <div className="max-w-6xl mx-auto h-[600px] flex rounded-2xl border border-[color:var(--border-color)] overflow-hidden glass-card">
-      {/* Channels Sidebar */}
-      <div className="w-64 border-r border-[color:var(--border-color)] flex flex-col justify-between" style={{ background: 'var(--bg-secondary)' }}>
-        <div className="p-4 space-y-4">
-          <div className="flex items-center gap-1.5 px-2">
-            <Sparkles size={16} className="text-brand-400" />
-            <h3 className="font-display font-bold text-sm" style={{ color: 'var(--text-primary)' }}>Family Channels</h3>
-          </div>
+    <div className="grid h-[calc(100dvh-170px)] min-h-[460px] gap-4 lg:h-[calc(100dvh-120px)] lg:grid-cols-[220px_1fr]">
+      <Card className="hidden flex-col p-3 lg:flex">
+        <div className="px-2 pb-2 text-[11px] font-bold uppercase tracking-wide text-ink-3">Channels</div>
+        {CHANNELS.map((c) => (
+          <button key={c.id} onClick={() => setChannel(c.id)}
+            className={cx('flex items-center gap-2 rounded-[10px] px-3 py-2 text-left text-sm font-medium', channel === c.id ? 'bg-primary-soft text-primary' : 'text-ink-2 hover:bg-surface-2')}>
+            <Hash size={15} /> {c.label}
+          </button>
+        ))}
+        <p className="mt-auto px-2 text-[12px] text-ink-3">{mode === 'demo' ? 'Demo chat stays in this browser.' : 'Only members of your household can read these messages.'}</p>
+      </Card>
 
-          <div className="space-y-1">
-            {channels.map(ch => {
-              const isActive = ch.id === activeChannel
-              return (
-                <button
-                  key={ch.id}
-                  onClick={() => {
-                    setActiveChannel(ch.id)
-                    setTypingUser(null)
-                  }}
-                  className={`w-full flex items-center gap-2 p-2.5 rounded-xl text-left transition-all ${
-                    isActive 
-                      ? 'bg-brand-500/10 border border-brand-500/20 shadow-glow-brand text-brand-400 font-semibold' 
-                      : 'hover:bg-white/4 text-muted-foreground'
-                  }`}
-                  style={{ color: isActive ? 'var(--text-primary)' : 'var(--text-muted)' }}
-                >
-                  <span className="text-sm">{ch.icon}</span>
-                  <div className="text-xs">
-                    <div className="flex items-center gap-0.5">
-                      <Hash size={12} className="opacity-65" />
-                      {ch.name}
-                    </div>
-                  </div>
-                </button>
-              )
-            })}
-          </div>
-        </div>
-
-        {/* Member list footer card */}
-        <div className="p-4 border-t border-[color:var(--border-color)] space-y-3" style={{ background: 'var(--bg-primary)' }}>
-          <span className="text-[10px] uppercase font-semibold tracking-wider flex items-center gap-1" style={{ color: 'var(--text-muted)' }}>
-            <Users size={12} /> Active Household ({4} online)
-          </span>
-          <div className="space-y-2">
-            {[
-              { name: 'Demo User 1', icon: '👑', status: 'Online' },
-              { name: 'Demo User 2', icon: '👩', status: 'Online' },
-              { name: 'Demo User 3', icon: '👦', status: 'Online' },
-              { name: 'Demo User 4', icon: '👴', status: 'Online' }
-            ].map(m => (
-              <div key={m.name} className="flex items-center justify-between text-[11px]">
-                <span className="flex items-center gap-1.5 font-medium" style={{ color: 'var(--text-secondary)' }}>
-                  <span>{m.icon}</span>
-                  {m.name}
-                </span>
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-              </div>
+      <Card className="flex min-h-0 flex-col overflow-hidden">
+        <div className="flex items-center gap-2 border-b border-line px-4 py-3">
+          <div className="flex gap-1 lg:hidden">
+            {CHANNELS.map((c) => (
+              <button key={c.id} onClick={() => setChannel(c.id)} className={cx('rounded-full px-3 py-1 text-[13px] font-semibold', channel === c.id ? 'bg-primary text-on-primary' : 'bg-surface-2 text-ink-2')}>#{c.label}</button>
             ))}
           </div>
-        </div>
-      </div>
-
-      {/* Message Chat Room */}
-      <div className="flex-1 flex flex-col justify-between bg-[var(--surface-2)]">
-        {/* Channel Header */}
-        <div className="p-4 border-b border-[color:var(--border-color)] flex items-center justify-between" style={{ background: 'var(--bg-secondary)' }}>
-          <div>
-            <div className="flex items-center gap-1">
-              <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
-                #{currentChannel.name}
-              </span>
-              <span className="text-xs">{currentChannel.icon}</span>
-            </div>
-            <p className="text-[10px] mt-0.5" style={{ color: 'var(--text-muted)' }}>
-              {currentChannel.description}
-            </p>
+          <div className="hidden lg:block">
+            <div className="font-semibold">#{channel}</div>
+            <div className="text-[12px] text-ink-3">{CHANNELS.find((c) => c.id === channel)?.hint}</div>
           </div>
-          <button 
-            onClick={() => toast.success('Muted/Notification features are mocked')}
-            className="p-1.5 rounded-lg hover:bg-white/5"
-            style={{ color: 'var(--text-muted)' }}
-          >
-            <MoreVertical size={16} />
-          </button>
         </div>
 
-        {/* Messages Scroll Area */}
-        <div className="flex-1 p-4 overflow-y-auto space-y-4 max-h-[440px]">
-          {channelMessages.map(msg => {
-            const isSelf = msg.senderEmail.toLowerCase() === user?.email?.toLowerCase()
-            const roleBadges: Record<string, string> = {
-              HOUSEHEAD: 'bg-brand-500/10 text-brand-400 border border-brand-500/20',
-              PARENT: 'bg-amber-500/10 text-amber-400 border border-amber-500/20',
-              ADULT_CHILD: 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20',
-              GRANDPARENT: 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
-            }
-
+        <div className="scrollbar-thin min-h-0 flex-1 space-y-3 overflow-y-auto px-4 py-4">
+          {messages.length === 0 && <p className="py-10 text-center text-sm text-ink-3">No messages in #{channel} yet. Say hello 👋</p>}
+          {messages.map(({ m, showDay }) => {
+            const day = m.created_at.slice(0, 10)
+            const mine = m.sender_id === userId
+            const sender = member(m.sender_id)
             return (
-              <div 
-                key={msg.id} 
-                className={`flex gap-3 max-w-[85%] ${isSelf ? 'ml-auto flex-row-reverse' : ''}`}
-              >
-                {/* Avatar Icon */}
-                <div className="w-8 h-8 rounded-xl flex items-center justify-center gradient-brand font-bold text-xs shrink-0">
-                  {msg.senderName.charAt(0)}
-                </div>
-
-                {/* Message Body */}
-                <div className="space-y-1">
-                  <div className={`flex items-center gap-1.5 text-[10px] ${isSelf ? 'justify-end' : ''}`}>
-                    <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>
-                      {msg.senderName}
-                    </span>
-                    <span className={`text-[8px] px-1 py-0.2 rounded font-semibold ${roleBadges[msg.senderRole] || 'bg-gray-500/10 text-gray-400'}`}>
-                      {msg.senderRole.replace('_', ' ').toLowerCase()}
-                    </span>
-                    <span style={{ color: 'var(--text-muted)' }}>{msg.timestamp}</span>
+              <div key={m.id}>
+                {showDay && <div className="my-3 text-center text-[11.5px] font-semibold uppercase tracking-wide text-ink-3">{relativeDay(day)}</div>}
+                <div className={cx('group flex items-end gap-2', mine && 'flex-row-reverse')}>
+                  {!mine && <Avatar name={sender?.full_name ?? 'Former member'} size={28} />}
+                  <div className={cx('max-w-[78%] rounded-[16px] px-3.5 py-2', mine ? 'rounded-br-[6px] bg-primary text-on-primary' : 'rounded-bl-[6px] bg-surface-2 text-ink')}>
+                    {!mine && (
+                      <div className="mb-0.5 flex items-center gap-1.5 text-[12px] font-semibold text-ink-2">
+                        {sender?.full_name.split(' ')[0] ?? 'Former member'}
+                        {sender && <Badge className="px-1.5 py-0 text-[10px]">{ROLE_LABELS[sender.role]}</Badge>}
+                      </div>
+                    )}
+                    <p className="whitespace-pre-wrap break-words text-[14px] leading-relaxed">{m.content}</p>
+                    <div className={cx('mt-0.5 text-right text-[10.5px]', mine ? 'text-on-primary/70' : 'text-ink-3')}>
+                      {new Date(m.created_at).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' })}
+                    </div>
                   </div>
-
-                  <div 
-                    className={`p-3 rounded-2xl text-xs leading-relaxed ${
-                      isSelf 
-                        ? 'bg-[var(--accent-soft)] border border-[color:var(--border-color)] text-[color:var(--text-primary)] rounded-tr-none' 
-                        : 'bg-[var(--surface-2)] border border-[color:var(--border-color)] rounded-tl-none'
-                    }`}
-                    style={{ color: isSelf ? '#ffffff' : 'var(--text-secondary)' }}
-                  >
-                    {msg.content}
-                  </div>
+                  {mine && (
+                    <IconButton label="Delete message" className="h-7 w-7 opacity-0 group-hover:opacity-100" onClick={() => mutate((b) => b.remove('chat', m.id))}><Trash2 size={13} /></IconButton>
+                  )}
                 </div>
               </div>
             )
           })}
-
-          {/* Typing Indicator */}
-          <AnimatePresence>
-            {typingUser && (
-              <motion.div 
-                className="flex gap-3 max-w-[85%]"
-                initial={{ opacity: 0, y: 5 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 5 }}
-              >
-                <div className="w-8 h-8 rounded-xl flex items-center justify-center gradient-brand font-bold text-xs shrink-0 animate-pulse">
-                  {typingUser.charAt(0)}
-                </div>
-                <div className="space-y-1">
-                  <span className="text-[10px] font-semibold" style={{ color: 'var(--text-muted)' }}>
-                    {typingUser} is typing...
-                  </span>
-                  <div className="p-3 rounded-2xl bg-[var(--surface-2)] border border-[color:var(--border-color)] rounded-tl-none flex gap-1 items-center h-8">
-                    <span className="w-1.5 h-1.5 rounded-full bg-white/40 animate-bounce" />
-                    <span className="w-1.5 h-1.5 rounded-full bg-white/40 animate-bounce delay-100" style={{ animationDelay: '0.2s' }} />
-                    <span className="w-1.5 h-1.5 rounded-full bg-white/40 animate-bounce delay-200" style={{ animationDelay: '0.4s' }} />
-                  </div>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-          <div ref={messagesEndRef} />
+          <div ref={bottom} />
         </div>
 
-        {/* Message Input Box Form */}
-        <form 
-          onSubmit={handleSend}
-          className="p-4 border-t border-[color:var(--border-color)] flex gap-2 items-center"
-          style={{ background: 'var(--bg-secondary)' }}
-        >
-          {/* Mock extra buttons */}
-          <button 
-            type="button" 
-            onClick={() => toast.error('Attachment upload features are mocked')}
-            className="p-2 rounded-xl hover:bg-white/5" 
-            style={{ color: 'var(--text-muted)' }}
-          >
-            <Paperclip size={16} />
-          </button>
-          <button 
-            type="button" 
-            onClick={() => toast.error('Images uploads are mocked')}
-            className="p-2 rounded-xl hover:bg-white/5" 
-            style={{ color: 'var(--text-muted)' }}
-          >
-            <Image size={16} />
-          </button>
-
-          <input 
-            id="chat-message-input"
-            type="text"
-            value={inputText}
-            onChange={e => setInputText(e.target.value)}
-            placeholder={`Message #${currentChannel.name}...`}
-            className="flex-1 bg-[var(--surface-2)] border border-[color:var(--border-color)] rounded-xl text-xs py-2 px-3 text-[color:var(--text-primary)] outline-none focus:border-[color:var(--accent)] transition-colors"
-          />
-
-          <button 
-            type="button" 
-            onClick={() => toast.error('Emoji panel is mocked')}
-            className="p-2 rounded-xl hover:bg-white/5" 
-            style={{ color: 'var(--text-muted)' }}
-          >
-            <Smile size={16} />
-          </button>
-
-          <button 
-            id="chat-send-btn"
-            type="submit" 
-            className="btn-primary p-2 rounded-xl"
-            disabled={!inputText.trim()}
-          >
-            <Send size={16} />
-          </button>
+        <form onSubmit={(e) => { e.preventDefault(); send() }} className="flex items-end gap-2 border-t border-line p-3">
+          <textarea className="field max-h-32 min-h-[44px] flex-1 resize-none py-2.5" rows={1} placeholder={`Message #${channel}`} maxLength={2000} value={text}
+            onChange={(e) => setText(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send() } }} />
+          <button type="submit" aria-label="Send" disabled={!text.trim() || sending}
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[12px] bg-primary text-on-primary disabled:opacity-50"><Send size={18} /></button>
         </form>
-      </div>
+      </Card>
     </div>
   )
 }

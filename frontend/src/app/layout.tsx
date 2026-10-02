@@ -1,23 +1,13 @@
 import type { Metadata, Viewport } from 'next'
-import { Inter, Fraunces } from 'next/font/google'
+import { Inter, Plus_Jakarta_Sans } from 'next/font/google'
 import './globals.css'
 import { ThemeProvider } from '@/components/ThemeProvider'
 import { Toaster } from 'react-hot-toast'
 import NativeBridge from '@/components/NativeBridge'
+import AppBoot from '@/components/AppBoot'
 
-const inter = Inter({
-  subsets: ['latin'],
-  variable: '--font-inter',
-  display: 'swap',
-})
-
-// Serif for headings: gives the plain "ledger book" feel without decoration.
-const fraunces = Fraunces({
-  subsets: ['latin'],
-  variable: '--font-serif',
-  display: 'swap',
-  weight: ['500', '600', '700'],
-})
+const inter = Inter({ subsets: ['latin'], variable: '--font-inter', display: 'swap' })
+const jakarta = Plus_Jakarta_Sans({ subsets: ['latin'], variable: '--font-jakarta', display: 'swap', weight: ['500', '600', '700', '800'] })
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -25,53 +15,49 @@ export const viewport: Viewport = {
   maximumScale: 5,
   viewportFit: 'cover',
   themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#f5f2ea' },
-    { media: '(prefers-color-scheme: dark)', color: '#141714' },
+    { media: '(prefers-color-scheme: light)', color: '#F6F7FB' },
+    { media: '(prefers-color-scheme: dark)', color: '#0A0E1C' },
   ],
 }
 
 export const metadata: Metadata = {
-  title: 'ManaKhata — Our Household Account',
-  description: 'AI-powered collaborative household financial operating system. Manage family finances, track expenses, reimbursements, assets, and get intelligent insights.',
-  keywords: 'household finance, family budget, expense tracker, reimbursement, AI financial advisor, India',
+  title: { default: 'Kinfold — the family money app', template: '%s · Kinfold' },
+  description: 'Kinfold brings your household’s money into one shared place: expenses, budgets, bills, splits, pocket money, goals and insights for the whole family.',
+  applicationName: 'Kinfold',
+  keywords: ['family budget', 'household expenses', 'expense sharing', 'split bills', 'pocket money', 'India', 'personal finance'],
   openGraph: {
-    title: 'ManaKhata — Our Household Account',
-    description: 'The financial brain of your household.',
+    title: 'Kinfold — the family money app',
+    description: "Your family's money, folded into one place.",
     type: 'website',
+    siteName: 'Kinfold',
   },
   manifest: '/manifest.json',
+  icons: { icon: '/icon-192x192.png', apple: '/icon-192x192.png' },
 }
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" suppressHydrationWarning data-scroll-behavior="smooth" className={`${inter.variable} ${fraunces.variable}`}>
-      <body className="premium-surface antialiased">
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="light"
-          enableSystem
-        >
+    <html lang="en" suppressHydrationWarning className={`${inter.variable} ${jakarta.variable}`}>
+      <body>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           <NativeBridge />
+          <AppBoot />
           {children}
         </ThemeProvider>
         <Toaster
-          position="top-right"
+          position="top-center"
           toastOptions={{
-            duration: 4000,
+            duration: 3500,
             style: {
-              background: 'var(--bg-secondary)',
-              color: 'var(--text-primary)',
-              border: '1px solid var(--border-color)',
-              borderRadius: '10px',
+              background: 'var(--surface)',
+              color: 'var(--ink)',
+              border: '1px solid var(--border)',
+              borderRadius: '12px',
               fontSize: '14px',
-              fontWeight: '500',
+              boxShadow: 'var(--shadow-lg)',
             },
-            success: { iconTheme: { primary: '#1f7a57', secondary: 'white' } },
-            error:   { iconTheme: { primary: '#b3261e', secondary: 'white' } },
+            success: { iconTheme: { primary: 'var(--positive)', secondary: 'var(--surface)' } },
+            error: { iconTheme: { primary: 'var(--negative)', secondary: 'var(--surface)' } },
           }}
         />
       </body>

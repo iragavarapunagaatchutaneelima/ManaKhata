@@ -1,211 +1,159 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { Target, Plus, CheckCircle2, Trophy, Loader2, ArrowRight } from 'lucide-react'
-import api from '@/lib/api'
-import { formatCurrency, formatDate } from '@/hooks/useUtils'
-import toast from 'react-hot-toast'
-import ReactConfetti from 'react-confetti'
-
-interface Goal {
-  id: number
-  name: string
-  description: string
-  targetAmount: number
-  currentAmount: number
-  targetDate: string
-  contributions: { amount: number; contributor: { fullName: string }; contributionDate: string }[]
-}
+import { useMemo, useState } from 'react'
+import { Goal as GoalIcon, Pencil, Plus, Trash2, Trophy } from 'lucide-react'
+import { Avatar, Badge, Button, Card, EmptyState, Field, IconButton, Modal, PageHeader, Progress, Stat, confirmAction } from '@/components/ui'
+import { useHousehold } from '@/store/ledger'
+import { formatDate, formatMoney, parseMoney, sumMoney, today } from '@/lib/money'
+import { goalProgress } from '@/lib/finance'
+import type { Goal } from '@/lib/model'
 
 export default function GoalsPage() {
-  const [goals, setGoals] = useState<Goal[]>([])
-  const [loading, setLoading] = useState(true)
-  const [showNew, setShowNew] = useState(false)
-  const [showConfetti, setShowConfetti] = useState(false)
-  const [contributeTo, setContributeTo] = useState<number | null>(null)
-  const [newGoal, setNewGoal] = useState({ name: '', description: '', targetAmount: '', targetDate: '' })
-  const [contributionAmt, setContributionAmt] = useState('')
+  const { data, currency, firstName, mutate } = useHousehold()
+  const [editing, setEditing] = useState<Goal | 'new' | null>(null)
+  const [contributing, setContributing] = useState<Goal | null>(null)
+  const t = today()
 
-  useEffect(() => { loadGoals() }, [])
+  const view = useMemo(() => {
+    if (!data) return null
+    const goals = data.goals.map((g) => {
+      const p = goalProgress(g, data.contributions, t)
+      const byPerson = new Map<string, number>()
+      for (const c of data.contributions.filter((c) => c.goal_id === g.id)) byPerson.set(c.user_id, (byPerson.get(c.user_id) ?? 0) + c.amount)
+      return { ...p, byPerson: [...byPerson].sort((a, b) => b[1] - a[1]) }
+    }).sort((a, b) => Number(a.done) - Number(b.done) || (a.goal.target_date ?? '9').localeCompare(b.goal.target_date ?? '9'))
+    return {
+      goals,
+      saved: sumMoney(goals, (g) => g.saved),
+      target: sumMoney(goals, (g) => g.goal.target_amount),
+      monthly: sumMoney(goals.filter((g) => !g.done), (g) => g.requiredMonthly ?? 0),
+    }
+  }, [data, t])
 
-  const loadGoals = async () => {
-    setLoading(true)
-    try {
-      const res = await api.getGoals()
-      if (res.success) setGoals(res.data)
-    } finally { setLoading(false) }
-  }
-
-  const handleCreate = async () => {
-    if (!newGoal.name || !newGoal.targetAmount) return
-    try {
-      const res = await api.createGoal({
-        ...newGoal,
-        targetAmount: parseFloat(newGoal.targetAmount)
-      })
-      if (res.success) {
-        setGoals(prev => [...prev, res.data])
-        setShowNew(false)
-        setNewGoal({ name: '', description: '', targetAmount: '', targetDate: '' })
-        toast.success('Goal created! 🎯')
-      }
-    } catch { toast.error('Failed to create goal') }
-  }
-
-  const handleContribute = async (goalId: number, target: number, current: number) => {
-    const amt = parseFloat(contributionAmt)
-    if (!amt || amt <= 0) return
-    try {
-      const res = await api.addGoalContribution(goalId, { amount: amt })
-      if (res.success) {
-        setGoals(prev => prev.map(g => {
-          if (g.id === goalId) {
-            const updatedAmt = g.currentAmount + amt
-            if (updatedAmt >= target && current < target) {
-              setShowConfetti(true)
-              setTimeout(() => setShowConfetti(false), 5000)
-              toast.success(`You reached your goal: ${g.name}! 🎉🎉`, { icon: '🏆' })
-            } else {
-              toast.success('Contribution added! 💰')
-            }
-            return { ...g, currentAmount: updatedAmt, contributions: [res.data, ...g.contributions] }
-          }
-          return g
-        }))
-        setContributeTo(null)
-        setContributionAmt('')
-      }
-    } catch { toast.error('Failed to add contribution') }
-  }
-
-  if (loading) return (
-    <div className="max-w-4xl mx-auto space-y-4">
-      {[1, 2].map(i => <div key={i} className="skeleton h-48 rounded-2xl" />)}
-    </div>
-  )
+  if (!view) return null
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6 relative">
-      {showConfetti && <div className="fixed inset-0 z-50 pointer-events-none"><ReactConfetti recycle={false} numberOfPieces={500} /></div>}
+    <div>
+      <PageHeader title="Savings goals" subtitle="Save together for the things that matter. Kinfold tells you how much to set aside each month."
+        actions={<Button icon={<Plus size={16} />} onClick={() => setEditing('new')}>New goal</Button>} />
 
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-xl gradient-brand flex items-center justify-center shadow-glow-brand">
-            <Trophy size={24} className="text-white" />
-          </div>
-          <div>
-            <h1 className="font-display font-bold text-2xl" style={{ color: 'var(--text-primary)' }}>Shared Goals</h1>
-            <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Save together for vacations, gadgets, or emergencies</p>
-          </div>
-        </div>
-        <button onClick={() => setShowNew(true)} className="btn-primary flex items-center gap-2">
-          <Plus size={16} /> New Goal
-        </button>
+      <div className="mb-5 grid grid-cols-3 gap-3">
+        <Stat label="Saved so far" value={formatMoney(view.saved, currency)} tone="positive" />
+        <Stat label="Across all goals" value={formatMoney(view.target, currency)} hint={view.target ? `${((view.saved / view.target) * 100).toFixed(0)}% of the way` : undefined} />
+        <Stat label="Needed each month" value={formatMoney(view.monthly, currency)} tone="primary" hint="To hit every target date" />
       </div>
 
-      <AnimatePresence>
-        {showNew && (
-          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
-            className="glass-card p-5 border border-brand-500/30 space-y-4 overflow-hidden">
-            <h3 className="font-semibold text-lg">Create a Savings Goal</h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs mb-1" style={{ color: 'var(--text-muted)' }}>Goal Name</label>
-                <input type="text" value={newGoal.name} onChange={e => setNewGoal(n => ({...n, name: e.target.value}))}
-                  className="input-field" placeholder="e.g. Goa Trip" />
-              </div>
-              <div>
-                <label className="block text-xs mb-1" style={{ color: 'var(--text-muted)' }}>Target Amount (₹)</label>
-                <input type="number" value={newGoal.targetAmount} onChange={e => setNewGoal(n => ({...n, targetAmount: e.target.value}))}
-                  className="input-field font-bold text-emerald-400" placeholder="50000" />
-              </div>
-              <div>
-                <label className="block text-xs mb-1" style={{ color: 'var(--text-muted)' }}>Target Date</label>
-                <input type="date" value={newGoal.targetDate} onChange={e => setNewGoal(n => ({...n, targetDate: e.target.value}))}
-                  className="input-field" />
-              </div>
-              <div>
-                <label className="block text-xs mb-1" style={{ color: 'var(--text-muted)' }}>Description (Optional)</label>
-                <input type="text" value={newGoal.description} onChange={e => setNewGoal(n => ({...n, description: e.target.value}))}
-                  className="input-field" placeholder="Brief note..." />
-              </div>
-            </div>
-            <div className="flex gap-3 justify-end pt-2">
-              <button onClick={() => setShowNew(false)} className="btn-ghost">Cancel</button>
-              <button onClick={handleCreate} className="btn-primary">Create Goal</button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {goals.map(goal => {
-          const progress = Math.min((goal.currentAmount / goal.targetAmount) * 100, 100)
-          const isComplete = progress >= 100
-
-          return (
-            <motion.div key={goal.id} layout className={`glass-card p-6 border relative overflow-hidden ${isComplete ? 'border-emerald-500/50' : 'border-transparent'}`}
-              style={{ borderColor: isComplete ? undefined : 'var(--border-color)' }}>
-              
-              {isComplete && <div className="absolute top-0 right-0 bg-emerald-500 text-white text-[10px] font-bold px-3 py-1 rounded-bl-lg uppercase tracking-wider">Goal Reached!</div>}
-              
-              <div className="flex justify-between items-start mb-6">
-                <div>
-                  <h3 className="font-display font-bold text-xl" style={{ color: 'var(--text-primary)' }}>{goal.name}</h3>
-                  <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>{goal.description || 'Savings Goal'}</p>
-                </div>
-                <div className="text-right">
-                  <div className="font-display font-bold text-xl" style={{ color: 'var(--text-primary)' }}>
-                    {formatCurrency(goal.targetAmount)}
+      {view.goals.length ? (
+        <div className="grid gap-4 md:grid-cols-2">
+          {view.goals.map((g) => (
+            <Card key={g.goal.id} className="p-5" fold={g.done}>
+              <div className="flex items-start gap-3">
+                <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] ${g.done ? 'bg-saffron-soft text-saffron-ink' : 'bg-primary-soft text-primary'}`}>
+                  {g.done ? <Trophy size={20} /> : <GoalIcon size={20} />}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="font-semibold text-ink">{g.goal.name}</span>
+                    {g.done && <Badge tone="positive">Reached</Badge>}
+                    {!g.done && g.monthsLeft === 0 && g.goal.target_date && <Badge tone="warning">Target date passed</Badge>}
                   </div>
-                  <div className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                    Target: {goal.targetDate ? formatDate(goal.targetDate) : 'No date set'}
-                  </div>
+                  {g.goal.description && <p className="text-[13px] text-ink-3">{g.goal.description}</p>}
                 </div>
+                <IconButton label="Edit goal" onClick={() => setEditing(g.goal)}><Pencil size={15} /></IconButton>
+                <IconButton label="Delete goal" onClick={async () => {
+                  if (await confirmAction({ title: `Delete “${g.goal.name}”?`, body: 'Its contribution history is deleted too.', confirmLabel: 'Delete', danger: true })) mutate((b) => b.remove('goals', g.goal.id), 'Goal deleted')
+                }}><Trash2 size={15} /></IconButton>
               </div>
 
-              {/* Progress Ring / Bar */}
-              <div className="space-y-2 mb-6">
-                <div className="flex justify-between text-sm font-semibold">
-                  <span className={isComplete ? 'text-emerald-400' : 'text-brand-400'}>
-                    {formatCurrency(goal.currentAmount)} saved
-                  </span>
-                  <span style={{ color: 'var(--text-muted)' }}>{progress.toFixed(1)}%</span>
-                </div>
-                <div className="h-3 rounded-full bg-[var(--surface-2)] overflow-hidden border border-[color:var(--border-color)] relative">
-                  <motion.div 
-                    initial={{ width: 0 }} animate={{ width: `${progress}%` }}
-                    transition={{ duration: 1, ease: 'easeOut' }}
-                    className={`h-full rounded-full ${isComplete ? 'bg-emerald-500' : 'gradient-brand relative'}`}
-                  >
-                    {!isComplete && <div className="absolute inset-0 bg-white/20 animate-pulse" />}
-                  </motion.div>
-                </div>
+              <div className="mt-4 flex items-end justify-between">
+                <div><span className="font-display text-2xl font-bold">{formatMoney(g.saved, currency)}</span><span className="text-sm text-ink-3"> of {formatMoney(g.goal.target_amount, currency)}</span></div>
+                <span className="text-sm font-semibold text-primary">{g.percent.toFixed(0)}%</span>
+              </div>
+              <Progress className="mt-2" value={g.percent} tone={g.done ? 'saffron' : 'primary'} />
+
+              <div className="mt-3 grid grid-cols-2 gap-2 text-[12.5px]">
+                <div className="rounded-[10px] bg-surface-2 px-3 py-2"><div className="text-ink-3">Target date</div><div className="font-semibold">{g.goal.target_date ? formatDate(g.goal.target_date, 'long') : 'Not set'}</div></div>
+                <div className="rounded-[10px] bg-surface-2 px-3 py-2"><div className="text-ink-3">Save each month</div><div className="font-semibold">{g.done ? '—' : g.requiredMonthly !== null ? formatMoney(g.requiredMonthly, currency) : 'Set a date'}</div></div>
               </div>
 
-              {contributeTo === goal.id ? (
-                <div className="flex gap-2">
-                  <input autoFocus type="number" value={contributionAmt} onChange={e => setContributionAmt(e.target.value)}
-                    className="input-field flex-1 text-sm" placeholder="Amount to add..." />
-                  <button onClick={() => handleContribute(goal.id, goal.targetAmount, goal.currentAmount)} className="btn-primary text-sm px-4">Add</button>
-                  <button onClick={() => { setContributeTo(null); setContributionAmt('') }} className="btn-ghost text-sm px-3">X</button>
+              {g.byPerson.length > 0 && (
+                <div className="mt-3 flex flex-wrap items-center gap-2 text-[12px] text-ink-3">
+                  {g.byPerson.map(([uid, amt]) => <span key={uid} className="inline-flex items-center gap-1"><Avatar name={firstName(uid)} size={18} />{firstName(uid)} {formatMoney(amt, currency)}</span>)}
                 </div>
-              ) : (
-                <button 
-                  onClick={() => setContributeTo(goal.id)}
-                  disabled={isComplete}
-                  className={`w-full py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-all ${
-                    isComplete ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-brand-500/10 text-brand-400 hover:bg-brand-500/20 border border-brand-500/20'
-                  }`}
-                >
-                  {isComplete ? <><CheckCircle2 size={16} /> Fully Funded</> : <><Plus size={16} /> Add Funds</>}
-                </button>
               )}
-            </motion.div>
-          )
-        })}
-      </div>
+
+              {!g.done && <Button className="mt-4 w-full" variant="secondary" icon={<Plus size={16} />} onClick={() => setContributing(g.goal)}>Add money</Button>}
+            </Card>
+          ))}
+        </div>
+      ) : (
+        <Card><EmptyState icon={<GoalIcon size={20} />} title="No goals yet" body="An emergency fund, a family holiday, a new laptop — give it a target and a date." action={<Button onClick={() => setEditing('new')}>Create a goal</Button>} /></Card>
+      )}
+
+      <GoalForm goal={editing} onClose={() => setEditing(null)} />
+      <ContributionForm goal={contributing} onClose={() => setContributing(null)} />
     </div>
+  )
+}
+
+function GoalForm({ goal, onClose }: { goal: Goal | 'new' | null; onClose: () => void }) {
+  const { currency, mutate } = useHousehold()
+  const editing = goal && goal !== 'new' ? goal : null
+  const [form, setForm] = useState({ name: '', description: '', target: '', date: '' })
+  const [error, setError] = useState<string | null>(null)
+  const [key, setKey] = useState<string | null>(null)
+  const formKey = goal === null ? null : editing?.id ?? 'new'
+  if (formKey !== key) {
+    setKey(formKey)
+    setForm(editing ? { name: editing.name, description: editing.description ?? '', target: String(editing.target_amount), date: editing.target_date ?? '' } : { name: '', description: '', target: '', date: '' })
+    setError(null)
+  }
+
+  async function save() {
+    const target = parseMoney(form.target)
+    if (!form.name.trim()) return setError('Name your goal.')
+    if (!Number.isFinite(target) || target <= 0) return setError('Enter a target amount above zero.')
+    const row = { name: form.name.trim(), description: form.description.trim() || null, target_amount: target, target_date: form.date || null }
+    const ok = await mutate((b) => editing ? b.update('goals', editing.id, row) : b.insert('goals', row), editing ? 'Goal updated' : 'Goal created')
+    if (ok) onClose()
+  }
+
+  return (
+    <Modal open={goal !== null} onClose={onClose} title={editing ? 'Edit goal' : 'New savings goal'}
+      footer={<><Button variant="secondary" onClick={onClose}>Cancel</Button><Button onClick={save}>{editing ? 'Save' : 'Create goal'}</Button></>}>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field label="Goal" className="sm:col-span-2"><input className="field" maxLength={80} placeholder="e.g. Emergency fund" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></Field>
+        <Field label="Why (optional)" className="sm:col-span-2"><input className="field" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} /></Field>
+        <Field label={`Target (${currency})`}><input className="field" inputMode="decimal" value={form.target} onChange={(e) => setForm({ ...form, target: e.target.value })} /></Field>
+        <Field label="Target date"><input className="field" type="date" min={today()} value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} /></Field>
+      </div>
+      {error && <p className="mt-3 rounded-[10px] bg-negative-soft px-3 py-2 text-sm text-negative">{error}</p>}
+    </Modal>
+  )
+}
+
+function ContributionForm({ goal, onClose }: { goal: Goal | null; onClose: () => void }) {
+  const { currency, mutate } = useHousehold()
+  const [amount, setAmount] = useState('')
+  const [note, setNote] = useState('')
+  const [error, setError] = useState<string | null>(null)
+
+  async function save() {
+    const value = parseMoney(amount)
+    if (!goal) return
+    if (!Number.isFinite(value) || value <= 0) return setError('Enter an amount above zero.')
+    const ok = await mutate((b) => b.insert('contributions', { goal_id: goal.id, amount: value, note: note.trim() || null }), `Added to ${goal.name}`)
+    if (ok) { setAmount(''); setNote(''); setError(null); onClose() }
+  }
+
+  return (
+    <Modal open={!!goal} onClose={onClose} title={`Add to ${goal?.name ?? ''}`} description="Record money you have moved into savings for this goal."
+      footer={<><Button variant="secondary" onClick={onClose}>Cancel</Button><Button onClick={save}>Add</Button></>}>
+      <div className="space-y-4">
+        <Field label={`Amount (${currency})`}><input className="field" inputMode="decimal" autoFocus value={amount} onChange={(e) => setAmount(e.target.value)} /></Field>
+        <Field label="Note (optional)"><input className="field" value={note} onChange={(e) => setNote(e.target.value)} /></Field>
+        {error && <p className="rounded-[10px] bg-negative-soft px-3 py-2 text-sm text-negative">{error}</p>}
+      </div>
+    </Modal>
   )
 }
