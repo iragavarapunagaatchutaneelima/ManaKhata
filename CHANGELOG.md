@@ -9,6 +9,7 @@ All notable changes to this project. Dates are in `YYYY-MM-DD`.
 - Settling up records **one** net payment (new `settle_pair` SQL function) instead of one row per direction.
 - Demo mirrors the database’s default columns (goal contributor, tax-proof owner, trip payer) — fixes contributions with no contributor.
 - Status bar on Android follows the selected theme.
+- Production fixes: app icons/favicon were excluded from the Vercel upload; install manifest now uses the Midnight colours; Dependabot branches no longer create Vercel preview links.
 
 ## [2.0.0] — 2026-10-02 · ManaKhata becomes **Kinfold**
 

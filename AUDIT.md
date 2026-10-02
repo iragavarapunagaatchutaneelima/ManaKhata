@@ -57,10 +57,11 @@ Deliberately **not** copied: bank-account aggregation and auto-import (needs reg
 
 | Item | State |
 |---|---|
-| GitHub | All work is on `release/kinfold-v2`, opened as pull request #1 into `main`. CI is green (web, Android APK, legacy API, Vercel). **Merging #1 publishes Kinfold to the live link.** |
-| Vercel | Project `manakata` owns <https://frontend-phi-lemon-1hkzt9uj98.vercel.app>; it is connected to this GitHub repo with production branch `main`, and its root directory is now `frontend` (it was `.`, so Git builds could never have succeeded). Commits by `senapathiyaswanth` on this public repo build without being blocked. |
-| Extra links | The blocked CLI deployments and branch previews created during this work were deleted. The one remaining CLI deployment keeps the live link up until `main` is merged; delete it afterwards (`vercel remove manakata-6xk495436-…`). Vercel will keep creating per-branch *preview* URLs for pull requests — those are protected (Vercel login required) and are normal for Git deployments. |
-| Supabase | Project *Kinfold* (free tier, $0/month), 3 migrations applied, database empty and ready |
+| GitHub | `main` holds Kinfold 2.1 (pull request #1 merged on 2026-10-02). CI runs web, Android APK and legacy-API jobs on every push. |
+| Vercel | Project `manakata` serves <https://frontend-phi-lemon-1hkzt9uj98.vercel.app> from `main` (root directory `frontend`). Every push to `main` redeploys the same link automatically. |
+| Production check | All 30 routes return 200, unknown routes 404, security headers present, demo flow and all 7 themes verified in a real browser on desktop and phone width with no console errors. App icons were 404 on the first 2.1 deploy because `.vercelignore` excluded `*.png`; fixed. |
+| Extra links | Old CLI deployments were removed. Dependabot branches no longer create preview links (`frontend/vercel.json`). Pull-request previews from people still appear on the PR and are login-protected. |
+| Supabase | Project *Kinfold* (free tier, $0/month), 4 migrations applied, database empty and ready |
 
 ## 5. Open items (prioritised)
 
