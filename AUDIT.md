@@ -55,10 +55,10 @@ Deliberately **not** copied: bank-account aggregation and auto-import (needs reg
 
 | Item | State |
 |---|---|
-| GitHub | `release/kinfold-v2` merged into `main` via pull request |
-| Vercel | Project `manakata` → <https://frontend-phi-lemon-1hkzt9uj98.vercel.app>, root directory `frontend`, connected to GitHub |
-| Extra links | Temporary CLI deployments from the v1 audit were deleted; only the project’s production domain is used |
-| Supabase | Project *Kinfold* (free tier, $0/month), 3 migrations applied |
+| GitHub | All work is on `release/kinfold-v2`, opened as pull request #1 into `main`. CI is green (web, Android APK, legacy API, Vercel). **Merging #1 publishes Kinfold to the live link.** |
+| Vercel | Project `manakata` owns <https://frontend-phi-lemon-1hkzt9uj98.vercel.app>; it is connected to this GitHub repo with production branch `main`, and its root directory is now `frontend` (it was `.`, so Git builds could never have succeeded). Commits by `senapathiyaswanth` on this public repo build without being blocked. |
+| Extra links | The blocked CLI deployments and branch previews created during this work were deleted. The one remaining CLI deployment keeps the live link up until `main` is merged; delete it afterwards (`vercel remove manakata-6xk495436-…`). Vercel will keep creating per-branch *preview* URLs for pull requests — those are protected (Vercel login required) and are normal for Git deployments. |
+| Supabase | Project *Kinfold* (free tier, $0/month), 3 migrations applied, database empty and ready |
 
 ## 5. Open items (prioritised)
 
