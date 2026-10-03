@@ -31,11 +31,11 @@ export default function SettingsPage() {
   if (!data || !me) return null
 
   function exportJSON() {
-    saveFile(`kinfold-export-${new Date().toISOString().slice(0, 10)}.json`, JSON.stringify({ exportedAt: new Date().toISOString(), ...data }, null, 2), 'application/json')
+    saveFile(`manakhata-export-${new Date().toISOString().slice(0, 10)}.json`, JSON.stringify({ exportedAt: new Date().toISOString(), ...data }, null, 2), 'application/json')
   }
   function exportCSV() {
     const csv = toCSV(data!.expenses.map((e) => ({ Date: e.expense_date, Description: e.description, Category: category(e.category).label, Amount: e.amount, PaidBy: memberName(e.paid_by), Visibility: e.visibility, Notes: e.notes ?? '' })))
-    saveFile('kinfold-expenses.csv', csv)
+    saveFile('manakhata-expenses.csv', csv)
   }
 
   async function changePassword() {
@@ -62,7 +62,7 @@ export default function SettingsPage() {
       </Card>
 
       <Card className="mb-5">
-        <CardHeader title="Theme" subtitle="Choose how Kinfold looks. Midnight is the default; your choice is saved on this device." />
+        <CardHeader title="Theme" subtitle="Choose how ManaKhata looks. Midnight is the default; your choice is saved on this device." />
         <div className="px-5 pb-5"><ThemePicker /></div>
       </Card>
 
@@ -103,7 +103,7 @@ export default function SettingsPage() {
           <li><Link href="/terms" className="block px-5 py-3 hover:bg-surface-2">Terms of Service</Link></li>
           <li><Link href="/privacy" className="block px-5 py-3 hover:bg-surface-2">Privacy Policy</Link></li>
           <li><a href={`${REPO_URL}/blob/main/LICENSE`} className="block px-5 py-3 hover:bg-surface-2">Open-source licence (MIT)</a></li>
-          <li className="px-5 py-3 text-ink-3">Kinfold v2.1 · {mode === 'demo' ? 'demo mode' : 'cloud sync on'}</li>
+          <li className="px-5 py-3 text-ink-3">ManaKhata v2.2 · {mode === 'demo' ? 'demo mode' : 'cloud sync on'}</li>
         </ul>
       </Card>
 

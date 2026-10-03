@@ -50,7 +50,7 @@ export default function BudgetsPage() {
 
   return (
     <div>
-      <PageHeader title="Budgets" subtitle="Monthly limits per category. Kinfold warns you when you cross your alert level."
+      <PageHeader title="Budgets" subtitle="Monthly limits per category. ManaKhata warns you when you cross your alert level."
         actions={<><MonthPicker value={month} onChange={setMonth} /><Button icon={<Plus size={16} />} onClick={() => setEditing('new')}>New budget</Button></>} />
 
       <div className="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-4">

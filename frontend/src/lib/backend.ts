@@ -161,7 +161,7 @@ export class LiveBackend implements Backend {
 // Demo (browser storage)
 // ─────────────────────────────────────────────────────────────────────────────
 
-const DEMO_KEY = 'kinfold.demo.v4'
+const DEMO_KEY = 'manakhata.demo.v4'
 
 interface DemoState { month: string; data: LedgerData }
 

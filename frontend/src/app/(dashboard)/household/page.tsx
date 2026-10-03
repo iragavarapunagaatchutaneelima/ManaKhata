@@ -20,10 +20,10 @@ export default function HouseholdPage() {
   const [name, setName] = useState('')
   if (!data) return null
   const h = data.household
-  const inviteText = `Join our household “${h.name}” on Kinfold. Sign up at ${SITE_URL} and use invite code ${h.invite_code}.`
+  const inviteText = `Join our household “${h.name}” on ManaKhata. Sign up at ${SITE_URL} and use invite code ${h.invite_code}.`
 
   async function share() {
-    if (navigator.share) { try { await navigator.share({ title: 'Join us on Kinfold', text: inviteText }); return } catch { /* cancelled */ } }
+    if (navigator.share) { try { await navigator.share({ title: 'Join us on ManaKhata', text: inviteText }); return } catch { /* cancelled */ } }
     await navigator.clipboard.writeText(inviteText)
     toast.success('Invite message copied')
   }

@@ -34,7 +34,7 @@ export default function GoalsPage() {
 
   return (
     <div>
-      <PageHeader title="Savings goals" subtitle="Save together for the things that matter. Kinfold tells you how much to set aside each month."
+      <PageHeader title="Savings goals" subtitle="Save together for the things that matter. ManaKhata tells you how much to set aside each month."
         actions={<Button icon={<Plus size={16} />} onClick={() => setEditing('new')}>New goal</Button>} />
 
       <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-3 [&>*:nth-child(3)]:col-span-2 sm:[&>*:nth-child(3)]:col-span-1">

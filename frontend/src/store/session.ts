@@ -10,8 +10,8 @@ import type { Role } from '@/lib/model'
 
 export type SessionStatus = 'loading' | 'signedOut' | 'onboarding' | 'ready'
 
-const MODE_KEY = 'kinfold.mode'
-const PERSONA_KEY = 'kinfold.demo.persona'
+const MODE_KEY = 'manakhata.mode'
+const PERSONA_KEY = 'manakhata.demo.persona'
 
 interface SessionState {
   status: SessionStatus

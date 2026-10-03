@@ -1,13 +1,13 @@
 <p align="center">
-  <img src="frontend/public/icon-192x192.png" width="88" alt="Kinfold logo" />
+  <img src="frontend/public/icon-192x192.png" width="88" alt="ManaKhata logo" />
 </p>
 
-<h1 align="center">Kinfold</h1>
-<p align="center"><b>Your family’s money, folded into one place.</b><br/>
+<h1 align="center">ManaKhata</h1>
+<p align="center"><b>Your family’s money, in one shared khata.</b><br/>
 A shared money app for households — on the web and on Android.</p>
 
 <p align="center">
-  <a href="https://frontend-phi-lemon-1hkzt9uj98.vercel.app"><b>Open Kinfold →</b></a> ·
+  <a href="https://frontend-phi-lemon-1hkzt9uj98.vercel.app"><b>Open ManaKhata →</b></a> ·
   <a href="https://frontend-phi-lemon-1hkzt9uj98.vercel.app/demo">Try the demo</a> ·
   <a href="#android-app">Android app</a> ·
   <a href="AUDIT.md">Audit & roadmap</a> ·
@@ -16,7 +16,7 @@ A shared money app for households — on the web and on Android.</p>
 
 ---
 
-Kinfold (formerly **ManaKhata**) lets a whole family record spending together, split costs fairly, stay ahead of
+ManaKhata (*mana khata* — “our ledger” in Telugu) lets a whole family record spending together, split costs fairly, stay ahead of
 bills and budgets, give pocket money and chore rewards, save toward goals, and see where the money goes — with
 every number calculated from the family’s own entries.
 
@@ -72,7 +72,7 @@ every number calculated from the family’s own entries.
                │ HTTPS (supabase-js, publishable key)│
                ▼                                    ▼
       ┌────────────────────────────────────────────────────┐
-      │ Supabase project “Kinfold” (Mumbai, ap-south-1)    │
+      │ Supabase project “ManaKhata” (Mumbai, ap-south-1)    │
       │  • Auth: email + password, confirmation, reset     │
       │  • Postgres 17: 24 tables, Row Level Security      │
       │  • SQL functions for approvals, wallet, settle-up  │
@@ -94,15 +94,15 @@ every number calculated from the family’s own entries.
 | UI | Next.js 16.3 (App Router, static export), React 19, TypeScript 5, Tailwind CSS 4, Recharts, Radix Dialog, lucide icons, next-themes |
 | State | Zustand (session + household ledger) |
 | Backend | Supabase: Postgres 17, Auth, Realtime, Row Level Security, PL/pgSQL functions |
-| Android | Capacitor 8 (`app.kinfold.mobile`, minSdk 24, targetSdk 36) |
+| Android | Capacitor 8 (`app.manakhata.household`, minSdk 24, targetSdk 36) |
 | Quality | Vitest (31 tests), ESLint (Next + TypeScript + React Hooks, strict), TypeScript strict, GitHub Actions, Dependabot |
 | Hosting | Vercel (web), Supabase (data), GitHub Actions artifacts (APK) |
 
 ## Repository layout
 
 ```
-ManaKhata/                       ← repository (product name: Kinfold)
-├── frontend/                    ← the Kinfold app (web + Android)
+ManaKhata/                       ← repository (product name: ManaKhata)
+├── frontend/                    ← the ManaKhata app (web + Android)
 │   ├── src/app/                 ← routes: / (landing), /demo, /auth/*, /onboarding, /terms, /privacy
 │   │   └── (dashboard)/         ← signed-in app: dashboard, expenses, budget, bills, splits, …
 │   ├── src/components/          ← UI kit (ui.tsx), shell nav, quick-add modal, logo, legal layout
@@ -115,7 +115,7 @@ ManaKhata/                       ← repository (product name: Kinfold)
 │   │   └── categories.ts, config.ts, supabase.ts, download.ts
 │   ├── src/store/               ← session.ts (auth/demo/onboarding), ledger.ts (data + realtime)
 │   ├── android/                 ← Capacitor Android project (committed)
-│   ├── assets/                  ← icon/splash sources for Android
+│   ├── assets/                  ← icon/splash sources for Android (regenerate with `node scripts/generate-icons.mjs`)
 │   └── scripts/build-android.mjs
 ├── supabase/migrations/         ← complete database schema, RLS and functions (apply in order)
 ├── legacy/                      ← v1 Spring Boot API, Python AI service, docker-compose (unused)
@@ -137,7 +137,7 @@ npm run dev
 Open <http://localhost:3000>:
 
 - **Try the demo** works immediately (no account, no network).
-- **Create account** uses the live Kinfold Supabase project. Confirmation emails link to `NEXT_PUBLIC_SITE_URL`; set it to `http://localhost:3000` in `frontend/.env.local` while developing (and add that URL in Supabase → Auth → URL configuration).
+- **Create account** uses the live ManaKhata Supabase project. Confirmation emails link to `NEXT_PUBLIC_SITE_URL`; set it to `http://localhost:3000` in `frontend/.env.local` while developing (and add that URL in Supabase → Auth → URL configuration).
 
 ### Use your own Supabase project (optional)
 
@@ -148,12 +148,12 @@ Open <http://localhost:3000>:
 
 ## Configuration
 
-All values are optional — defaults live in [`frontend/src/lib/config.ts`](frontend/src/lib/config.ts) and point to the official Kinfold project.
+All values are optional — defaults live in [`frontend/src/lib/config.ts`](frontend/src/lib/config.ts) and point to the official ManaKhata project.
 
 | Variable | Default | Purpose |
 |---|---|---|
-| `NEXT_PUBLIC_SUPABASE_URL` | Kinfold project | Supabase API URL |
-| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Kinfold publishable key | Public client key (safe to ship; RLS protects data) |
+| `NEXT_PUBLIC_SUPABASE_URL` | ManaKhata project | Supabase API URL |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | ManaKhata publishable key | Public client key (safe to ship; RLS protects data) |
 | `NEXT_PUBLIC_SITE_URL` | `https://frontend-phi-lemon-1hkzt9uj98.vercel.app` | Where email confirmation / reset links send people |
 | `BUILD_TARGET` | — | `android` = static export to `out/` (set by `npm run build:android`) |
 
@@ -164,7 +164,7 @@ All values are optional — defaults live in [`frontend/src/lib/config.ts`](fron
 | Auth → URL configuration → Site URL | `https://frontend-phi-lemon-1hkzt9uj98.vercel.app` |
 | Auth → URL configuration → Redirect URLs | `https://frontend-phi-lemon-1hkzt9uj98.vercel.app/**`, `http://localhost:3000/**` |
 | Auth → Email → SMTP (recommended for launch) | A real SMTP provider (Resend, SES, Brevo…). The built-in sender is limited to a few emails per hour. |
-| Auth → Emails → Templates (optional) | Kinfold-branded confirmation and reset emails |
+| Auth → Emails → Templates (optional) | ManaKhata-branded confirmation and reset emails |
 
 ## Android app
 
@@ -172,7 +172,7 @@ The Android app is the same UI packaged with Capacitor. It talks to the same Sup
 family can mix phones and laptops freely.
 
 **Get an APK without installing anything:** every push to `main` runs **Actions → CI → Android app** and uploads
-**`kinfold-android-debug-apk`** as a downloadable artifact. Copy it to your phone and open it (allow “Install unknown apps”).
+**`manakhata-android-debug-apk`** as a downloadable artifact. Copy it to your phone and open it (allow “Install unknown apps”).
 
 **Build it yourself** (needs JDK 21 + Android SDK, e.g. via Android Studio):
 
@@ -184,7 +184,7 @@ npm run android:open         # opens Android Studio → Run ▶
 # or: cd android && ./gradlew assembleDebug   → android/app/build/outputs/apk/debug/
 ```
 
-Native touches: hardware back button (exits from Home), status bar follows light/dark, Kinfold icon and splash.
+Native touches: hardware back button (exits from Home), status bar follows light/dark, ManaKhata icon and splash.
 To refresh icons, edit `frontend/assets/*` and run `npx @capacitor/assets generate --android`.
 Play Store release signing is not set up yet (see AUDIT.md).
 
@@ -195,7 +195,7 @@ Play Store release signing is not set up yet (see AUDIT.md).
 | Piece | Where | How it updates |
 |---|---|---|
 | Website | Vercel project **`manakata`** → <https://frontend-phi-lemon-1hkzt9uj98.vercel.app> | Vercel Git integration on `main` (root directory `frontend`). Manual: `cd frontend && vercel deploy --prod`. |
-| Database | Supabase project **Kinfold** (`lpqbtssvotkvogqmzohv`, ap-south-1) | Add a new file in `supabase/migrations/` and apply it (dashboard SQL editor or `supabase db push`). Never edit applied migrations. |
+| Database | Supabase project **ManaKhata** (`lpqbtssvotkvogqmzohv`, ap-south-1) | Add a new file in `supabase/migrations/` and apply it (dashboard SQL editor or `supabase db push`). Never edit applied migrations. |
 | Android | GitHub Actions artifact | Automatic on every push. |
 
 > ⚠️ **Vercel Hobby plan:** Vercel only builds commits whose author can deploy to the project. If a Git deploy shows
@@ -203,7 +203,7 @@ Play Store release signing is not set up yet (see AUDIT.md).
 
 ## Data model & security
 
-The schema ([`supabase/migrations/20261002000000_kinfold_schema.sql`](supabase/migrations/20261002000000_kinfold_schema.sql)) has
+The schema ([`supabase/migrations/20261002000000_manakhata_schema.sql`](supabase/migrations/20261002000000_manakhata_schema.sql)) has
 `profiles`, `households`, `household_members` and 21 household-scoped tables (expenses, incomes, splits, settlements,
 reimbursements, budgets, recurring bills, wallet transactions, goals, contributions, grocery lists/items, chores, chat,
 vehicles, vehicle expenses, trips, trip expenses, investments, insurance policies, tax documents).
@@ -257,7 +257,7 @@ How it works: `next-themes` sets `data-theme="<id>"` on `<html>`; each theme is 
 tokens (`bg-surface`, `text-ink-2`, `bg-primary`, …), so every theme styles every screen. Component classes (`.card`, `.field`, …) are in
 Tailwind’s `components` layer so utility classes such as `pl-10` always win — this is what keeps icons from overlapping input text.
 
-Typography: Plus Jakarta Sans for headings, Inter for text, tabular numbers everywhere. Signature detail: a small accent “fold” on featured cards, echoing the logo.
+Typography: Plus Jakarta Sans for headings, Inter for text, tabular numbers everywhere. Logo: a khata (ledger) page with a saffron margin rule and a rupee sign — `src/components/Logo.tsx` for the app, `scripts/generate-icons.mjs` renders every web, PWA and Android icon and splash from the same shape. Signature detail: a small saffron corner on featured cards, like a marked ledger page.
 
 ## Testing
 
@@ -291,4 +291,4 @@ cross-household writes, realtime delivery, account deletion) — see AUDIT.md §
 - Read [CONTRIBUTING.md](CONTRIBUTING.md) and the [Code of Conduct](CODE_OF_CONDUCT.md). Open items are tracked in [AUDIT.md](AUDIT.md).
 - Report vulnerabilities privately as described in [SECURITY.md](SECURITY.md).
 - Code is released under the [MIT Licence](LICENSE). Use of the hosted service is governed by the in-app [Terms](https://frontend-phi-lemon-1hkzt9uj98.vercel.app/terms) and [Privacy Policy](https://frontend-phi-lemon-1hkzt9uj98.vercel.app/privacy).
-- Kinfold gives no financial, investment or tax advice; all insights are educational estimates from your own data.
+- ManaKhata gives no financial, investment or tax advice; all insights are educational estimates from your own data.

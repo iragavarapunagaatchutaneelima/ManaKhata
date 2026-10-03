@@ -1,4 +1,4 @@
--- Kinfold v2 schema (Supabase / Postgres 17)
+-- ManaKhata v2 schema (Supabase / Postgres 17)
 -- Every row belongs to a household. Row Level Security limits each signed-in
 -- user to the household they are a member of; privileged actions (approvals,
 -- wallet moves, chore payouts, settle-ups) go through SECURITY DEFINER

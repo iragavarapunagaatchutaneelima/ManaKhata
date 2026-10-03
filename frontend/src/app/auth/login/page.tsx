@@ -37,7 +37,7 @@ export default function LoginPage() {
 
   return (
     <AuthShell title="Welcome back" subtitle="Sign in to your household."
-      footer={<>New to Kinfold? <Link href="/auth/register" className="font-semibold text-primary">Create an account</Link></>}>
+      footer={<>New to ManaKhata? <Link href="/auth/register" className="font-semibold text-primary">Create an account</Link></>}>
       <form onSubmit={submit} className="space-y-4">
         <Field label="Email"><input className="field" type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} /></Field>
         <Field label="Password">

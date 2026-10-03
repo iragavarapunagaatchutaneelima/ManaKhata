@@ -1,6 +1,6 @@
 ---
 name: Bug report
-about: Something in Kinfold isn't working
+about: Something in ManaKhata isn't working
 labels: bug
 ---
 

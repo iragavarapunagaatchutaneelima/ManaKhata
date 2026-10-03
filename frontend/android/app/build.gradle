@@ -1,10 +1,10 @@
 apply plugin: 'com.android.application'
 
 android {
-    namespace = "app.kinfold.mobile"
+    namespace = "app.manakhata.household"
     compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "app.kinfold.mobile"
+        applicationId "app.manakhata.household"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

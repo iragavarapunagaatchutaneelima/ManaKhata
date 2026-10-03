@@ -89,7 +89,7 @@ export default function SplitsPage() {
                   <span className="ml-auto font-semibold text-primary tabular-nums">{formatMoney(p.amount, currency, { decimals: true })}</span>
                 </li>
               ))}
-              <p className="pt-1 text-[12.5px] text-ink-3">Pay these amounts outside Kinfold (UPI or cash), then use <b>Settle</b> on the matching balances.</p>
+              <p className="pt-1 text-[12.5px] text-ink-3">Pay these amounts outside ManaKhata (UPI or cash), then use <b>Settle</b> on the matching balances.</p>
             </ul>
           ) : <p className="px-5 pb-6 text-sm text-ink-3">Nothing to settle right now.</p>}
         </Card>

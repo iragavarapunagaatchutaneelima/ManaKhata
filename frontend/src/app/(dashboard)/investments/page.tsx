@@ -87,7 +87,7 @@ export default function InvestmentsPage() {
         <Card><EmptyState icon={<TrendingUp size={20} />} title="No holdings yet" body="Add mutual funds, PPF, FDs, stocks or gold to see your family’s net investments." action={<Button onClick={() => setEditing('new')}>Add holding</Button>} /></Card>
       )}
 
-      <p className="mt-4 text-[12px] text-ink-3">Kinfold does not fetch live prices or give investment advice. Returns are calculated from the values you enter.</p>
+      <p className="mt-4 text-[12px] text-ink-3">ManaKhata does not fetch live prices or give investment advice. Returns are calculated from the values you enter.</p>
       <HoldingForm holding={editing} onClose={() => setEditing(null)} />
     </div>
   )

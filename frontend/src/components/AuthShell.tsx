@@ -6,7 +6,7 @@ export function AuthShell({ title, subtitle, children, footer }: { title: string
   return (
     <div className="safe-top flex min-h-dvh flex-col bg-bg">
       <header className="mx-auto flex w-full max-w-5xl items-center justify-between px-5 py-5">
-        <Link href="/" aria-label="Kinfold home"><Logo size={28} /></Link>
+        <Link href="/" aria-label="ManaKhata home"><Logo size={28} /></Link>
         <Link href="/demo" className="text-sm font-semibold text-primary">Try the demo</Link>
       </header>
       <main className="flex flex-1 items-start justify-center px-5 pb-10 pt-4 sm:items-center">

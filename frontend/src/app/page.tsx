@@ -12,7 +12,7 @@ import { REPO_URL } from '@/lib/config'
 
 const FEATURES = [
   { icon: Users, title: 'One shared ledger', body: 'Everyone in the family records spending in one place. Mark anything private and it stays yours.' },
-  { icon: Split, title: 'Fair splits, fewer payments', body: 'Split bills equally or by amount. Kinfold nets everything out and suggests the fewest payments to settle up.' },
+  { icon: Split, title: 'Fair splits, fewer payments', body: 'Split bills equally or by amount. ManaKhata nets everything out and suggests the fewest payments to settle up.' },
   { icon: PiggyBank, title: 'Budgets that warn early', body: 'Monthly limits per category with a month-end projection, so you know before you overspend.' },
   { icon: Bell, title: 'Bills never sneak up', body: 'Rent, EMIs, school fees and subscriptions with due dates. One tap records the payment.' },
   { icon: Wallet, title: 'Pocket money & chores', body: 'Give allowances, reward chores and let kids see their own wallet — real money skills at home.' },
@@ -22,8 +22,8 @@ const FEATURES = [
 ]
 
 const FAQ = [
-  ['Is Kinfold free?', 'Yes. Kinfold is free to use, and its source code is published under the MIT licence.'],
-  ['Does Kinfold connect to my bank?', 'No. You add entries yourself, so Kinfold never asks for bank logins, card numbers or UPI PINs.'],
+  ['Is ManaKhata free?', 'Yes. ManaKhata is free to use, and its source code is published under the MIT licence.'],
+  ['Does ManaKhata connect to my bank?', 'No. You add entries yourself, so ManaKhata never asks for bank logins, card numbers or UPI PINs.'],
   ['Who can see my expenses?', 'Only members of your household, and only entries marked shared. Private entries are visible to you alone — enforced by the database, not just the app.'],
   ['Can I try it without signing up?', 'Yes — the demo household is fully interactive. Your changes stay in your browser and never reach our servers.'],
   ['Can I delete my data?', 'Any time, from Settings → Delete account. You can also export your transactions as CSV first.'],
@@ -38,7 +38,7 @@ export default function Landing() {
     <div className="min-h-dvh bg-bg text-ink">
       <header className="safe-top sticky top-0 z-30 border-b border-line bg-bg/85 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-6xl items-center gap-4 px-5">
-          <Link href="/" aria-label="Kinfold home"><Logo size={30} /></Link>
+          <Link href="/" aria-label="ManaKhata home"><Logo size={30} /></Link>
           <nav className="ml-6 hidden gap-6 text-sm font-medium text-ink-2 md:flex">
             <a href="#features" className="hover:text-ink">Features</a>
             <a href="#security" className="hover:text-ink">Privacy & security</a>
@@ -46,7 +46,7 @@ export default function Landing() {
           </nav>
           <div className="ml-auto flex items-center gap-2">
             {signedIn ? (
-              <Button onClick={() => router.push('/dashboard')}>Open Kinfold</Button>
+              <Button onClick={() => router.push('/dashboard')}>Open ManaKhata</Button>
             ) : (
               <>
                 <Link href="/auth/login" className="hidden h-10 items-center px-3 text-sm font-semibold text-ink-2 hover:text-ink sm:inline-flex">Sign in</Link>
@@ -63,17 +63,17 @@ export default function Landing() {
             <span className="h-2 w-2 rounded-full bg-saffron" /> Built for Indian families · works anywhere
           </span>
           <h1 className="mt-5 font-display text-[40px] font-extrabold leading-[1.08] tracking-tight sm:text-[54px]">
-            Your family’s money,<br /><span className="text-primary">folded into one place.</span>
+            Your family’s money,<br /><span className="text-primary">in one shared khata.</span>
           </h1>
           <p className="mt-5 max-w-xl text-[17px] leading-relaxed text-ink-2">
-            Kinfold is a shared money app for households. Track spending together, split costs fairly, stay ahead of bills and budgets,
+            ManaKhata is a shared money app for households. Track spending together, split costs fairly, stay ahead of bills and budgets,
             and teach kids about money — on the web and on Android.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Button size="lg" variant="saffron" onClick={() => router.push('/demo')} icon={<ArrowRight size={18} />}>Try the demo — no sign-up</Button>
             <Button size="lg" variant="secondary" onClick={() => router.push('/auth/register')}>Create free account</Button>
           </div>
-          <p className="mt-4 text-sm text-ink-3">Already using Kinfold? <Link href="/auth/login" className="font-semibold text-primary">Sign in</Link></p>
+          <p className="mt-4 text-sm text-ink-3">Already using ManaKhata? <Link href="/auth/login" className="font-semibold text-primary">Sign in</Link></p>
         </div>
 
         {/* Product preview built from real components' styling, not a screenshot */}
@@ -136,7 +136,7 @@ export default function Landing() {
           {[
             ['1', 'Create your household', 'Sign up, name your household and set your monthly income.'],
             ['2', 'Invite your family', 'Share the 8-letter invite code. Pick roles: parent, adult or student.'],
-            ['3', 'Record as you go', 'Add spending in seconds. Kinfold does the maths — splits, budgets, savings rate.'],
+            ['3', 'Record as you go', 'Add spending in seconds. ManaKhata does the maths — splits, budgets, savings rate.'],
           ].map(([n, title, body]) => (
             <div key={n}>
               <div className="flex h-9 w-9 items-center justify-center rounded-full bg-saffron font-display font-bold text-on-saffron">{n}</div>
@@ -151,7 +151,7 @@ export default function Landing() {
         <div className="mx-auto grid max-w-6xl gap-10 px-5 lg:grid-cols-2">
           <div>
             <h2 className="font-display text-3xl font-bold">Private by design</h2>
-            <p className="mt-2 text-ink-2">Family money is personal. Kinfold is built so that only the right people see the right numbers.</p>
+            <p className="mt-2 text-ink-2">Family money is personal. ManaKhata is built so that only the right people see the right numbers.</p>
             <div className="mt-6 flex items-center gap-3 text-sm text-ink-2"><Smartphone size={18} className="text-primary" /> Web app for any browser, plus an Android app.</div>
           </div>
           <ul className="grid gap-3 sm:grid-cols-2">
@@ -195,7 +195,7 @@ export default function Landing() {
       <footer className="safe-bottom border-t border-line bg-surface">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-6 gap-y-3 px-5 py-8 text-sm text-ink-3">
           <Logo size={24} />
-          <span>© {new Date().getFullYear()} Kinfold contributors</span>
+          <span>© {new Date().getFullYear()} ManaKhata contributors</span>
           <nav className="ml-auto flex flex-wrap gap-5">
             <Link href="/terms" className="hover:text-ink">Terms</Link>
             <Link href="/privacy" className="hover:text-ink">Privacy</Link>

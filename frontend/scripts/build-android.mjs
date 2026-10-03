@@ -1,4 +1,4 @@
-// Builds the static web bundle for the Kinfold Android app and syncs it into android/.
+// Builds the static web bundle for the ManaKhata Android app and syncs it into android/.
 //
 //   npm run build:android
 //

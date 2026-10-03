@@ -1,6 +1,6 @@
-# Contributing to Kinfold
+# Contributing to ManaKhata
 
-Thanks for helping make Kinfold better for families! This guide covers how to set up, what we expect in a change, and how to get it merged.
+Thanks for helping make ManaKhata better for families! This guide covers how to set up, what we expect in a change, and how to get it merged.
 
 ## Ground rules
 
