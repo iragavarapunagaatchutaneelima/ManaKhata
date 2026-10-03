@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /*
- * Kinfold themes
+ * ManaKhata themes
  * --------------
  * next-themes writes data-theme="<id>" on <html>. Each theme defines the same
  * tokens; components only ever use tokens, so every theme styles every screen.
@@ -299,7 +299,7 @@
     box-shadow: var(--shadow);
   }
 
-  /* Kinfold signature: a small accent "fold" on featured cards. */
+  /* ManaKhata signature: a small accent "fold" on featured cards. */
   .card-fold { position: relative; overflow: hidden; }
   .card-fold::after {
     content: "";

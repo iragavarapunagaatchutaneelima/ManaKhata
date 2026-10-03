@@ -6,6 +6,4 @@ assets
 scripts
 capacitor.config.ts
 *.log
-*.png
-!public/**
 tsconfig.tsbuildinfo

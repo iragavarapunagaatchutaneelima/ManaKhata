@@ -127,7 +127,7 @@ export default function InsightsPage() {
         ) : <p className="px-5 pb-5 text-sm text-ink-3">No tips right now — you’re on track.</p>}
       </Card>
 
-      <div className="mt-4 flex gap-2 text-[12.5px] text-ink-3"><Info size={15} className="mt-0.5 shrink-0" /><p>Insights are educational and based only on what your household records in Kinfold. They are not financial, investment or tax advice.</p></div>
+      <div className="mt-4 flex gap-2 text-[12.5px] text-ink-3"><Info size={15} className="mt-0.5 shrink-0" /><p>Insights are educational and based only on what your household records in ManaKhata. They are not financial, investment or tax advice.</p></div>
     </div>
   )
 }

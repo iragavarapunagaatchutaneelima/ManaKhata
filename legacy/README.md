@@ -1,6 +1,6 @@
 # Legacy (ManaKhata v1)
 
-This folder keeps the **v1 server stack** that ManaKhata used before it became **Kinfold v2**:
+This folder keeps the **v1 server stack** that ManaKhata used before it became **ManaKhata v2**:
 
 | Folder / file | What it is |
 |---|---|
@@ -9,7 +9,7 @@ This folder keeps the **v1 server stack** that ManaKhata used before it became *
 | `docker-compose.yml` | MySQL + backend + AI service |
 | `run.bat` | Windows launcher for the v1 stack |
 
-**Kinfold v2 does not use any of this.** The web and Android apps in `../frontend` talk directly to
+**ManaKhata v2 does not use any of this.** The web and Android apps in `../frontend` talk directly to
 Supabase (Postgres + Auth + Realtime) with the schema in `../supabase/migrations`, and all business
 rules live in Row Level Security policies and SQL functions there.
 

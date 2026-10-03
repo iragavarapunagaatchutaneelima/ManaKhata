@@ -1,8 +1,8 @@
 {
-  "name": "kinfold",
-  "version": "2.1.0",
+  "name": "manakhata",
+  "version": "2.2.0",
   "private": true,
-  "description": "Kinfold — the family money app (web + Android)",
+  "description": "ManaKhata — the family money app (web + Android)",
   "license": "MIT",
   "scripts": {
     "dev": "next dev",

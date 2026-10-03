@@ -1,4 +1,4 @@
-// Kinfold domain model. Row types mirror the Postgres tables in
+// ManaKhata domain model. Row types mirror the Postgres tables in
 // supabase/migrations exactly (snake_case), so the same shapes flow from
 // Supabase in live mode and from the browser-stored demo household.
 

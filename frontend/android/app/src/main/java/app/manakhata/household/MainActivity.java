@@ -1,4 +1,4 @@
-package app.kinfold.mobile;
+package app.manakhata.household;
 
 import com.getcapacitor.BridgeActivity;
 

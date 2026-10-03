@@ -7,12 +7,12 @@ export const metadata: Metadata = { title: 'Privacy Policy' }
 export default function PrivacyPage() {
   return (
     <LegalPage title="Privacy Policy" intro={<>
-      <strong>In short:</strong> we collect only what you type into Kinfold plus your email and name. We don’t run ads, don’t sell data and don’t use tracking
+      <strong>In short:</strong> we collect only what you type into ManaKhata plus your email and name. We don’t run ads, don’t sell data and don’t use tracking
       cookies. Your household’s data is protected by database-level access rules, stored with Supabase in Mumbai, and you can export or delete it whenever you like.
     </>}>
       <h2>1. Scope</h2>
       <p>
-        This policy explains how Kinfold handles personal data when you use the web app at <a href={SITE_URL}>{SITE_URL.replace('https://', '')}</a> and the Kinfold Android app.
+        This policy explains how ManaKhata handles personal data when you use the web app at <a href={SITE_URL}>{SITE_URL.replace('https://', '')}</a> and the ManaKhata Android app.
         It is written to meet India’s Digital Personal Data Protection Act, 2023 (DPDP Act) and comparable laws such as the GDPR.
       </p>
 
@@ -56,7 +56,7 @@ export default function PrivacyPage() {
       </ul>
 
       <h2>7. Children</h2>
-      <p>Kinfold accounts are for adults. Children and teenagers may be added only to a household created by a parent or guardian, who consents to the processing of their data and controls what they can see.</p>
+      <p>ManaKhata accounts are for adults. Children and teenagers may be added only to a household created by a parent or guardian, who consents to the processing of their data and controls what they can see.</p>
 
       <h2>8. Security</h2>
       <p>

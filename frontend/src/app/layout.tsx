@@ -19,25 +19,25 @@ export const viewport: Viewport = {
 }
 
 export const metadata: Metadata = {
-  title: { default: 'Kinfold — the family money app', template: '%s · Kinfold' },
-  description: 'Kinfold brings your household’s money into one shared place: expenses, budgets, bills, splits, pocket money, goals and insights for the whole family.',
-  applicationName: 'Kinfold',
+  title: { default: 'ManaKhata — the family money app', template: '%s · ManaKhata' },
+  description: 'ManaKhata brings your household’s money into one shared place: expenses, budgets, bills, splits, pocket money, goals and insights for the whole family.',
+  applicationName: 'ManaKhata',
   keywords: ['family budget', 'household expenses', 'expense sharing', 'split bills', 'pocket money', 'India', 'personal finance'],
   openGraph: {
-    title: 'Kinfold — the family money app',
-    description: "Your family's money, folded into one place.",
+    title: 'ManaKhata — the family money app',
+    description: "Your family's money, in one shared khata.",
     type: 'website',
-    siteName: 'Kinfold',
+    siteName: 'ManaKhata',
   },
   manifest: '/manifest.json',
-  icons: { icon: '/icon-192x192.png', apple: '/icon-192x192.png' },
+  icons: { icon: '/icon-192x192.png', apple: '/apple-touch-icon.png' },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning className={`${inter.variable} ${jakarta.variable}`}>
       <body>
-        <ThemeProvider attribute="data-theme" themes={THEME_IDS} defaultTheme={DEFAULT_THEME} enableSystem disableTransitionOnChange storageKey="kinfold.theme">
+        <ThemeProvider attribute="data-theme" themes={THEME_IDS} defaultTheme={DEFAULT_THEME} enableSystem disableTransitionOnChange storageKey="manakhata.theme">
           <NativeBridge />
           <AppBoot />
           {children}

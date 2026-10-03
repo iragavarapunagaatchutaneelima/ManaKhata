@@ -13,10 +13,10 @@ import { addMonths, financialYear, monthKey, toISODate, toMinor, fromMinor } fro
 export const DEMO_HOUSEHOLD_ID = 'demo-household'
 
 export const DEMO_PEOPLE = [
-  { id: 'demo-asha',   name: 'Asha Sharma',   email: 'asha@demo.kinfold.app',   role: 'HOUSEHEAD',   income: 110000, blurb: 'Household head · sees everything, approves requests' },
-  { id: 'demo-vikram', name: 'Vikram Sharma', email: 'vikram@demo.kinfold.app', role: 'PARENT',      income: 85000,  blurb: 'Parent · manages budgets and chores' },
-  { id: 'demo-meera',  name: 'Meera Sharma',  email: 'meera@demo.kinfold.app',  role: 'ADULT_CHILD', income: 32000,  blurb: 'Working daughter · shares costs, has private spending' },
-  { id: 'demo-ravi',   name: 'Ravi Sharma',   email: 'ravi@demo.kinfold.app',   role: 'STUDENT',     income: 0,      blurb: 'Student · pocket money, chores and rewards' },
+  { id: 'demo-asha',   name: 'Asha Sharma',   email: 'asha@demo.manakhata.example',   role: 'HOUSEHEAD',   income: 110000, blurb: 'Household head · sees everything, approves requests' },
+  { id: 'demo-vikram', name: 'Vikram Sharma', email: 'vikram@demo.manakhata.example', role: 'PARENT',      income: 85000,  blurb: 'Parent · manages budgets and chores' },
+  { id: 'demo-meera',  name: 'Meera Sharma',  email: 'meera@demo.manakhata.example',  role: 'ADULT_CHILD', income: 32000,  blurb: 'Working daughter · shares costs, has private spending' },
+  { id: 'demo-ravi',   name: 'Ravi Sharma',   email: 'ravi@demo.manakhata.example',   role: 'STUDENT',     income: 0,      blurb: 'Student · pocket money, chores and rewards' },
 ] as const
 
 const [ASHA, VIKRAM, MEERA, RAVI] = DEMO_PEOPLE.map((p) => p.id)

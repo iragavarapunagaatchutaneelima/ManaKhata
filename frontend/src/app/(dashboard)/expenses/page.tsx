@@ -49,7 +49,7 @@ export default function TransactionsPage() {
     const csv = toCSV(rows.map((r) => r.kind === 'expense'
       ? { Date: r.e.expense_date, Type: 'Expense', Description: r.e.description, Category: category(r.e.category).label, Person: memberName(r.e.paid_by), Method: r.e.payment_method, Visibility: r.e.visibility, Amount: -r.e.amount, Notes: r.e.notes ?? '' }
       : { Date: r.i.income_date, Type: 'Income', Description: r.i.source, Category: 'Income', Person: memberName(r.i.user_id), Method: '', Visibility: 'HOUSEHOLD', Amount: r.i.amount, Notes: r.i.notes ?? '' }))
-    if (csv) saveFile(`kinfold-transactions-${month}.csv`, csv)
+    if (csv) saveFile(`manakhata-transactions-${month}.csv`, csv)
   }
 
   return (

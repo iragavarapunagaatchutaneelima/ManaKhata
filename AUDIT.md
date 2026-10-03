@@ -1,10 +1,10 @@
-# Kinfold — Audit, verification & roadmap
+# ManaKhata — Audit, verification & roadmap
 
 | | |
 |---|---|
-| **Release audited** | Kinfold 2.0.0 (formerly ManaKhata) — branch `release/kinfold-v2` |
+| **Release audited** | ManaKhata 2.2.0 — branch `main` |
 | **Date** | 2 October 2026 |
-| **Live** | Web: <https://frontend-phi-lemon-1hkzt9uj98.vercel.app> · Database: Supabase project *Kinfold* (`lpqbtssvotkvogqmzohv`, ap-south-1) |
+| **Live** | Web: <https://frontend-phi-lemon-1hkzt9uj98.vercel.app> · Database: Supabase project *ManaKhata* (`lpqbtssvotkvogqmzohv`, ap-south-1) |
 | **Previous audit** | [docs/archive/AUDIT-v1.md](docs/archive/AUDIT-v1.md) (ManaKhata 1.x, Spring Boot era) |
 
 This document records **what was researched, what was built, how it was verified, and what is still open** — ordered by priority so the team can work through it.
@@ -19,13 +19,13 @@ This document records **what was researched, what was built, how it was verified
 | **Real-world application** — anyone can sign up, enter their own data and get correct maths | Email sign-up with confirmation, password reset, household onboarding (create or join by invite code), roles, multi-member sync with realtime updates. One tested calculation engine for every figure. |
 | Compare with real competitors and add what’s missing | See §2. Added bills & subscriptions, settle-up with debt simplification, income tracking, budget suggestions and projections, 50/30/20 check, health score, insurance cover check, tax limits, CSV/JSON export, account deletion. |
 | New colours: realistic, distinct light & dark modes | **Indigo & Saffron** design system; light (cool paper white) and dark (deep night-indigo) are separate palettes, not inversions. |
-| New name for web + Android | **Kinfold** everywhere; Android id `app.kinfold.mobile`; new logo, icons, splash. |
+| Name for web + Android | **ManaKhata** everywhere; Android id `app.manakhata.household`; rupee-ledger logo, icons, splash. |
 | Terms & conditions, licensing clear on GitHub | `/terms`, `/privacy` (accepted at sign-up), MIT `LICENSE`, `CONTRIBUTING.md`, `SECURITY.md`, `CODE_OF_CONDUCT.md`, `CHANGELOG.md`, issue/PR templates. |
 | Use the **same Vercel link**, deploy from GitHub, remove extra links | Deployed to the existing `frontend-phi-lemon-1hkzt9uj98.vercel.app` (project `manakata`) from GitHub `main`; extra CLI deployments removed (see §4). |
 
 ## 2. Competitive research (what real products do)
 
-| Product | What families rely on it for | Adopted in Kinfold |
+| Product | What families rely on it for | Adopted in ManaKhata |
 |---|---|---|
 | **Splitwise** | Shared expenses, equal/custom splits, *simplify debts* to the fewest payments, settle-up history | Equal/custom splits on any expense, netted balances, greedy minimum-transfer plan, one-tap settle, settlement history |
 | **Monarch Money** | One subscription for the household, shared dashboard, per-member logins, net worth | Household with roles and per-member logins, shared home dashboard, investments + liquid assets |
@@ -34,7 +34,7 @@ This document records **what was researched, what was built, how it was verified
 | **Walnut / Indian expense apps** | ₹ formatting, UPI/cash, Indian categories | Lakh/crore formatting, UPI/cash/card methods, Indian categories (rent & EMI, family support, school fees), 80C/80D tax tracking, Indian financial year |
 | **Kids’ money apps (FamZoo, GoHenry)** | Allowances, chores with rewards | Pocket-money wallet ledger, chores approved by a parent with automatic reward payout |
 
-Deliberately **not** copied: bank-account aggregation and auto-import (needs regulated Account Aggregator / bank partnerships and would require storing bank consent — out of scope for an open-source app; Kinfold never asks for bank credentials).
+Deliberately **not** copied: bank-account aggregation and auto-import (needs regulated Account Aggregator / bank partnerships and would require storing bank consent — out of scope for an open-source app; ManaKhata never asks for bank credentials).
 
 ## 3. Verification evidence
 
@@ -57,10 +57,11 @@ Deliberately **not** copied: bank-account aggregation and auto-import (needs reg
 
 | Item | State |
 |---|---|
-| GitHub | All work is on `release/kinfold-v2`, opened as pull request #1 into `main`. CI is green (web, Android APK, legacy API, Vercel). **Merging #1 publishes Kinfold to the live link.** |
-| Vercel | Project `manakata` owns <https://frontend-phi-lemon-1hkzt9uj98.vercel.app>; it is connected to this GitHub repo with production branch `main`, and its root directory is now `frontend` (it was `.`, so Git builds could never have succeeded). Commits by `senapathiyaswanth` on this public repo build without being blocked. |
-| Extra links | The blocked CLI deployments and branch previews created during this work were deleted. The one remaining CLI deployment keeps the live link up until `main` is merged; delete it afterwards (`vercel remove manakata-6xk495436-…`). Vercel will keep creating per-branch *preview* URLs for pull requests — those are protected (Vercel login required) and are normal for Git deployments. |
-| Supabase | Project *Kinfold* (free tier, $0/month), 3 migrations applied, database empty and ready |
+| GitHub | `main` holds ManaKhata 2.1 (pull request #1 merged on 2026-10-02). CI runs web, Android APK and legacy-API jobs on every push. |
+| Vercel | Project `manakata` serves <https://frontend-phi-lemon-1hkzt9uj98.vercel.app> from `main` (root directory `frontend`). Every push to `main` redeploys the same link automatically. |
+| Production check | All 30 routes return 200, unknown routes 404, security headers present, demo flow and all 7 themes verified in a real browser on desktop and phone width with no console errors. App icons were 404 on the first 2.1 deploy because `.vercelignore` excluded `*.png`; fixed. |
+| Extra links | Old CLI deployments were removed. Dependabot branches no longer create preview links (`frontend/vercel.json`). Pull-request previews from people still appear on the PR and are login-protected. |
+| Supabase | Project *ManaKhata* (free tier, $0/month), 5 migrations applied (latest: ManaKhata naming for anonymised logins), database empty and ready |
 
 ## 5. Open items (prioritised)
 
@@ -71,7 +72,7 @@ Deliberately **not** copied: bank-account aggregation and auto-import (needs reg
 | ID | Item | Who | How |
 |---|---|---|---|
 | K-01 | **Supabase Auth URLs** — Site URL is still the default, so confirmation and reset emails would point to `localhost` | Owner | Supabase → Authentication → URL Configuration: Site URL `https://frontend-phi-lemon-1hkzt9uj98.vercel.app`; Redirect URLs `https://frontend-phi-lemon-1hkzt9uj98.vercel.app/**` and `http://localhost:3000/**` |
-| K-02 | **Email delivery** — Supabase’s built-in sender is limited to a few emails per hour | Owner | Authentication → Emails → SMTP settings: connect Resend / Amazon SES / Brevo with a domain you own; brand the templates as Kinfold |
+| K-02 | **Email delivery** — Supabase’s built-in sender is limited to a few emails per hour | Owner | Authentication → Emails → SMTP settings: connect Resend / Amazon SES / Brevo with a domain you own; brand the templates as ManaKhata |
 | K-03 | **Vercel Hobby commit-author rule** — Git deploys from commits not authored by the Vercel account owner can be *Blocked* | Owner | Either merge PRs as the owner (squash merge authored by the owner), or move the project to a Pro team, or transfer it to the main developer’s account |
 | K-04 | Legal review of Terms & Privacy and a named grievance contact | Owner | Have counsel review `/terms` and `/privacy`; add a monitored contact address |
 
@@ -104,6 +105,6 @@ Deliberately **not** copied: bank-account aggregation and auto-import (needs reg
 
 ## 6. Known limitations (by design)
 
-- Kinfold does not move money, hold funds, or connect to banks; wallet, settlements and reimbursements record money moved outside the app.
+- ManaKhata does not move money, hold funds, or connect to banks; wallet, settlements and reimbursements record money moved outside the app.
 - Insights, health score, tax and insurance figures are educational estimates from your own entries, not advice.
 - Tax limits implement the **old regime** for taxpayers under 60; the new regime allows few of these deductions.

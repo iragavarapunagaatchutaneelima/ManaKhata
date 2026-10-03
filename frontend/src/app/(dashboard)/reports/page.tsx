@@ -37,7 +37,7 @@ export default function ReportsPage() {
 
   function exportSummary() {
     const csv = toCSV(view!.trend.map((p) => ({ Month: monthLabel(p.key, 'long'), Income: p.income, Spent: p.spent, Saved: p.saved, 'Savings rate %': p.income > 0 ? ((p.saved / p.income) * 100).toFixed(1) : '' })))
-    saveFile(`kinfold-summary-${view!.trend[0].key}-to-${month}.csv`, csv)
+    saveFile(`manakhata-summary-${view!.trend[0].key}-to-${month}.csv`, csv)
   }
 
   return (

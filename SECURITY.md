@@ -1,6 +1,6 @@
 # Security policy
 
-Kinfold stores household financial records, so we take security reports seriously.
+ManaKhata stores household financial records, so we take security reports seriously.
 
 ## Reporting a vulnerability
 
@@ -12,13 +12,13 @@ confirmed high-severity issues within 30 days. We’ll credit you in the release
 
 ## Scope
 
-In scope: the Kinfold web app, the Android app, and the database rules in `supabase/migrations` (for example, any way to read
+In scope: the ManaKhata web app, the Android app, and the database rules in `supabase/migrations` (for example, any way to read
 or change another household’s data, bypass a role check, or move wallet balances below zero).
 
 Out of scope: the unused v1 code in `legacy/`, denial-of-service, social engineering, and issues in third-party platforms
 (Supabase, Vercel) that should be reported to them.
 
-## How Kinfold protects data
+## How ManaKhata protects data
 
 - Postgres **Row Level Security** on every table, scoped to household membership.
 - Privileged actions only through `SECURITY DEFINER` SQL functions that re-check the caller’s role; internal helpers are not callable by clients.
@@ -28,4 +28,4 @@ Out of scope: the unused v1 code in `legacy/`, denial-of-service, social enginee
 
 ## Supported versions
 
-Only the latest release on `main` (Kinfold 2.x) receives security fixes.
+Only the latest release on `main` (ManaKhata 2.x) receives security fixes.

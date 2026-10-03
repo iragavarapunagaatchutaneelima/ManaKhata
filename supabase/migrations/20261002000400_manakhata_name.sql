@@ -1,11 +1,5 @@
--- Account deletion that works even when the family's shared history still
--- references the person (expenses they paid, splits, settlements …).
---  * Personal records are deleted outright (private expenses, incomes, tax proofs,
---    chat messages, personal budgets).
---  * If the person was the last member, the whole household is deleted.
---  * Otherwise the login is anonymised and permanently disabled, so shared
---    entries stay consistent for the rest of the family but no longer carry
---    the person's name, email or phone.
+-- Product name is ManaKhata: anonymised logins use a ManaKhata placeholder address.
+-- Same function as 20261002000200_safe_account_deletion.sql otherwise.
 create or replace function public.delete_my_account()
 returns void language plpgsql security definer set search_path = public, auth as $$
 declare

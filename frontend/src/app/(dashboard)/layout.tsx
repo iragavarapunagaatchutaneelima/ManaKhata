@@ -46,7 +46,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   if (status !== 'ready') return <Splash />
 
   const visibleNav = NAV.map((g) => ({ ...g, items: g.items.filter((i) => !i.analytics || canSeeAnalytics) })).filter((g) => g.items.length)
-  const title = ALL_NAV.find((n) => n.href === pathname)?.label ?? 'Kinfold'
+  const title = ALL_NAV.find((n) => n.href === pathname)?.label ?? 'ManaKhata'
 
   async function handleSignOut() {
     if (mode === 'live' && !(await confirmAction({ title: 'Sign out?', body: 'You can sign back in any time.', confirmLabel: 'Sign out' }))) return
@@ -181,7 +181,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
       <TransactionModal />
       <ConfirmHost />
-      <Modal open={themeOpen} onClose={() => setThemeOpen(false)} title="Theme" description="Pick a look for Kinfold. Saved on this device." wide>
+      <Modal open={themeOpen} onClose={() => setThemeOpen(false)} title="Theme" description="Pick a look for ManaKhata. Saved on this device." wide>
         <ThemePicker onPicked={() => setThemeOpen(false)} />
       </Modal>
     </div>

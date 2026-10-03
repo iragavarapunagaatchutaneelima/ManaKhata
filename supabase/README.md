@@ -1,15 +1,16 @@
-# Kinfold database (Supabase)
+# ManaKhata database (Supabase)
 
-Production project: **Kinfold** · ref `lpqbtssvotkvogqmzohv` · region `ap-south-1` (Mumbai) · Postgres 17.
+Production project: **ManaKhata** · ref `lpqbtssvotkvogqmzohv` · region `ap-south-1` (Mumbai) · Postgres 17.
 
 Apply the migrations **in filename order** to create or update a database:
 
 | File | What it does |
 |---|---|
-| `20261002000000_kinfold_schema.sql` | All tables, integrity triggers, Row Level Security policies, SQL functions, realtime publication |
+| `20261002000000_manakhata_schema.sql` | All tables, integrity triggers, Row Level Security policies, SQL functions, realtime publication |
 | `20261002000100_lock_internal_functions.sql` | Makes trigger/helper functions uncallable by clients |
 | `20261002000200_safe_account_deletion.sql` | Account deletion that erases personal data and anonymises shared history |
 | `20261002000300_settle_pair.sql` | Settle everything between two people at once and record one net settlement |
+| `20261002000400_manakhata_name.sql` | Uses a ManaKhata placeholder address when anonymising a deleted login |
 
 Rules for changes:
 

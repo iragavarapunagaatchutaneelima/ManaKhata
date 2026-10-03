@@ -1,4 +1,4 @@
-// Kinfold calculation engine.
+// ManaKhata calculation engine.
 //
 // Every figure shown in the app is derived here from raw ledger rows, so the
 // demo household and real households follow exactly the same maths. All money

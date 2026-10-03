@@ -1,4 +1,4 @@
-// Selectable Kinfold themes. Each id maps to a [data-theme="…"] token block in
+// Selectable ManaKhata themes. Each id maps to a [data-theme="…"] token block in
 // globals.css. "dark" and "light" double as the targets of "Match my device".
 
 export interface ThemeDef {

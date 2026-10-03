@@ -1,14 +1,14 @@
 {
-  "name": "Kinfold — the family money app",
-  "short_name": "Kinfold",
+  "name": "ManaKhata — the family money app",
+  "short_name": "ManaKhata",
   "description": "Shared household expenses, budgets, bills, splits, pocket money and goals for the whole family.",
   "id": "/",
   "start_url": "/dashboard",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#F6F7FB",
-  "theme_color": "#3B4BC8",
+  "background_color": "#0A0E1C",
+  "theme_color": "#0A0E1C",
   "categories": ["finance", "productivity", "lifestyle"],
   "icons": [
     { "src": "/icon-192x192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },

@@ -2,7 +2,7 @@
 
 ## Our pledge
 
-We want Kinfold’s community to be welcoming and harassment-free for everyone, regardless of age, body size, disability,
+We want ManaKhata’s community to be welcoming and harassment-free for everyone, regardless of age, body size, disability,
 ethnicity, sex characteristics, gender identity and expression, level of experience, education, socio-economic status,
 nationality, personal appearance, race, caste, religion, or sexual identity and orientation.
 

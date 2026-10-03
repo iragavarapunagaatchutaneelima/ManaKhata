@@ -5,7 +5,7 @@ import Link from 'next/link'
 
 // Keeps one broken screen from taking down the whole app shell.
 export default function DashboardError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
-  useEffect(() => { console.error('[Kinfold] page error:', error) }, [error])
+  useEffect(() => { console.error('[ManaKhata] page error:', error) }, [error])
 
   return (
     <div className="card mx-auto mt-16 max-w-md p-8 text-center">
